@@ -1,0 +1,13 @@
+{
+  "name": "localViewer",
+  "short_name": "Viewer",
+  "description": "Local viewer for Markdown, STL and 3MF files.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101418",
+  "theme_color": "#101418",
+  "icons": [
+    { "src": "icons/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any maskable" }
+  ]
+}

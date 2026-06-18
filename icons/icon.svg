@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#101418"/>
+  <g fill="none" stroke="#6cb6ff" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 88 L408 176 L408 336 L256 424 L104 336 L104 176 Z"/>
+    <path d="M256 88 L256 248 L408 176"/>
+    <path d="M256 248 L104 176"/>
+    <path d="M256 248 L256 424"/>
+  </g>
+  <text x="256" y="478" text-anchor="middle" font-family="Segoe UI,Arial" font-size="56" fill="#80e0a7" font-weight="700">VIEW</text>
+</svg>

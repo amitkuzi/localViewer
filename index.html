@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101418">
+<title>localViewer — MD / STL / 3MF</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "marked": "https://cdn.jsdelivr.net/npm/marked@12.0.0/lib/marked.esm.js",
+    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.es.mjs"
+  }
+}
+</script>
+
+<style>
+  :root{
+    --bg:#101418; --panel:#171c22; --line:#2a313a; --text:#e6ebf0;
+    --muted:#9aa4af; --accent:#6cb6ff; --accent-2:#80e0a7;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif}
+  header{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;
+    border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+  header h1{font-size:1rem;margin:0;font-weight:600;letter-spacing:.02em}
+  header .badge{font-size:.7rem;color:var(--muted);border:1px solid var(--line);
+    border-radius:999px;padding:.1rem .5rem}
+  header .spacer{flex:1}
+  header button,header label{font:inherit;color:var(--text);background:transparent;
+    border:1px solid var(--line);border-radius:8px;padding:.35rem .65rem;cursor:pointer}
+  header button:hover,header label:hover{border-color:var(--accent)}
+  header input[type=file]{display:none}
+  main{position:relative;height:calc(100% - 49px)}
+  #drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:.75rem;color:var(--muted);padding:2rem;text-align:center}
+  #drop.over{background:rgba(108,182,255,.08);outline:2px dashed var(--accent);outline-offset:-12px}
+  #drop .big{font-size:1.1rem;color:var(--text)}
+  #drop code{background:#0b0e12;border:1px solid var(--line);padding:.1rem .35rem;border-radius:6px}
+  #md{display:none;padding:2rem;max-width:880px;margin:0 auto;line-height:1.6;overflow:auto;height:100%}
+  #md h1,#md h2,#md h3{border-bottom:1px solid var(--line);padding-bottom:.25rem}
+  #md code{background:#0b0e12;padding:.1rem .35rem;border-radius:4px}
+  #md pre{background:#0b0e12;border:1px solid var(--line);padding:.75rem;border-radius:8px;overflow:auto}
+  #md table{border-collapse:collapse}
+  #md th,#md td{border:1px solid var(--line);padding:.3rem .55rem}
+  #md a{color:var(--accent)}
+  #three{display:none;width:100%;height:100%}
+  #info{position:absolute;left:.75rem;bottom:.75rem;background:rgba(16,20,24,.85);
+    border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
+    pointer-events:none;backdrop-filter:blur(6px)}
+  #panel{position:absolute;right:.75rem;top:.75rem;background:rgba(16,20,24,.85);
+    border:1px solid var(--line);border-radius:10px;padding:.55rem .65rem;font-size:.85rem;
+    display:flex;flex-direction:column;gap:.4rem;min-width:180px;backdrop-filter:blur(6px)}
+  #panel label{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:var(--muted)}
+  #panel input[type=color]{width:32px;height:22px;border:none;background:transparent;padding:0}
+  #panel button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+    border-radius:6px;padding:.25rem .5rem;cursor:pointer}
+  #panel button:hover{border-color:var(--accent)}
+  #err{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+    color:#ff9090;padding:2rem;text-align:center;white-space:pre-wrap;font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>localViewer</h1>
+  <span class="badge" id="kindBadge">no file</span>
+  <span class="spacer"></span>
+  <label for="picker">Open file</label>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.stl,.3mf">
+  <button id="installBtn" hidden>Install app</button>
+</header>
+
+<main>
+  <div id="drop">
+    <div class="big">Drop a <code>.md</code>, <code>.stl</code>, or <code>.3mf</code> file here</div>
+    <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
+    <div style="opacity:.7">Tip on Windows: register the helper to open files straight from Explorer (see README).</div>
+  </div>
+  <article id="md"></article>
+  <div id="three"></div>
+  <div id="panel" hidden>
+    <label>Color <input id="colorPick" type="color" value="#8fb8e6"></label>
+    <label>Wireframe <input id="wireToggle" type="checkbox"></label>
+    <label>Grid <input id="gridToggle" type="checkbox" checked></label>
+    <button id="fitBtn">Fit view</button>
+  </div>
+  <div id="info"></div>
+  <div id="err"></div>
+</main>
+
+<script type="module" src="app.js"></script>
+<script>
+  // PWA install hook
+  let deferredPrompt = null;
+  const btn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferredPrompt = e; btn.hidden = false;
+  });
+  btn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt = null; btn.hidden = true;
+  });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () =>
+      navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  }
+</script>
+</body>
+</html>
