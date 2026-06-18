@@ -207,7 +207,25 @@ window.addEventListener('drop', (e) => {
   if (f) loadFromBlob(f.name, f);
 });
 
-// ---- auto-load via ?src= ----
+// ---- File Handling API: launched from the OS (installed PWA) ----
+// When localViewer is installed, Edge/Chrome register it as a handler for
+// .md/.stl/.3mf. Opening such a file from Explorer launches the app and
+// delivers the file here — no local server, no PowerShell.
+if ('launchQueue' in window && 'LaunchParams' in window) {
+  launchQueue.setConsumer(async (launchParams) => {
+    if (!launchParams.files || !launchParams.files.length) return;
+    try {
+      const handle = launchParams.files[0];
+      const file = await handle.getFile();
+      loadFromBlob(file.name, file);
+    } catch (e) {
+      console.error(e);
+      showError('Failed to open the launched file.\n\n' + (e.message || e));
+    }
+  });
+}
+
+// ---- auto-load via ?src= (used by the local PowerShell helper) ----
 const params = new URLSearchParams(location.search);
 const src = params.get('src');
 if (src) loadFromURL(src);

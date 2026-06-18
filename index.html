@@ -81,7 +81,7 @@
   <div id="drop">
     <div class="big">Drop a <code>.md</code>, <code>.stl</code>, or <code>.3mf</code> file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
-    <div style="opacity:.7">Tip on Windows: register the helper to open files straight from Explorer (see README).</div>
+    <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
   <article id="md"></article>
   <div id="three"></div>
@@ -96,18 +96,43 @@
 </main>
 
 <script type="module" src="app.js"></script>
+<div id="toast" style="position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);
+  background:#16321f;color:#cfeede;border:1px solid #2e6b45;border-radius:10px;
+  padding:.6rem .9rem;font:14px/1.4 system-ui;max-width:90vw;display:none;z-index:50;
+  box-shadow:0 6px 24px rgba(0,0,0,.4)"></div>
+
 <script>
   // PWA install hook
   let deferredPrompt = null;
   const btn = document.getElementById('installBtn');
+  const toast = document.getElementById('toast');
+  function showToast(msg, ms = 6000) {
+    toast.textContent = msg; toast.style.display = 'block';
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => { toast.style.display = 'none'; }, ms);
+  }
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredPrompt = e; btn.hidden = false;
   });
   btn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      showToast('Use the install icon in the address bar, then localViewer will register for .md/.stl/.3mf.');
+      return;
+    }
     deferredPrompt.prompt();
-    deferredPrompt = null; btn.hidden = true;
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') btn.hidden = true;
   });
+
+  // After install, Edge registers file_handlers from the manifest automatically.
+  window.addEventListener('appinstalled', () => {
+    btn.hidden = true;
+    showToast('Installed. localViewer is now registered for .md / .stl / .3mf — '
+      + 'right-click a file → Open with → localViewer.', 9000);
+  });
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () =>
       navigator.serviceWorker.register('sw.js').catch(()=>{}));

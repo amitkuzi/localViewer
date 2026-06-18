@@ -1,4 +1,5 @@
 {
+  "id": "./",
   "name": "localViewer",
   "short_name": "Viewer",
   "description": "Local viewer for Markdown, STL and 3MF files.",
@@ -9,5 +10,24 @@
   "theme_color": "#101418",
   "icons": [
     { "src": "icons/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any maskable" }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "text/markdown": [".md", ".markdown"],
+        "text/plain": [".txt"],
+        "model/stl": [".stl"],
+        "application/sla": [".stl"],
+        "model/3mf": [".3mf"],
+        "application/vnd.ms-3mfdocument": [".3mf"]
+      },
+      "icons": [
+        { "src": "icons/icon.svg", "type": "image/svg+xml", "sizes": "any" }
+      ]
+    }
   ]
 }
