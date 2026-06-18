@@ -1,25 +1,29 @@
 <#
 .SYNOPSIS
-    Registers .md / .stl / .3mf to open with localViewer via "Open with > Viewer".
+    Registers .md / .stl / .3mf to open with localViewer via "Open with > localViewer".
 
 .DESCRIPTION
     Writes per-user HKCU classes (no admin required). Adds:
       - HKCU\Software\Classes\Applications\localViewer.cmd\shell\open\command
-      - OpenWithProgids entries on the file extensions
+      - SupportedTypes for the extensions
+      - HKCU\Software\Classes\<.ext>\OpenWithList\localViewer.cmd
+      - HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\<.ext>\OpenWithList
+        (this is the one Explorer actually reads on Windows 10/11)
     A small wrapper .cmd is written next to open-file.ps1 because the Windows
     "Open with" dialog does not accept .ps1 directly.
 
 .NOTES
     Run from inside viewer/tools/. Re-run any time to refresh paths.
+    After running, you may need to restart Explorer for the menu to refresh.
 #>
 [CmdletBinding()]
 param()
 
 $ErrorActionPreference = 'Stop'
 
-$toolsDir  = $PSScriptRoot
-$viewerDir = Split-Path -Parent $toolsDir
-$openPs1   = Join-Path $toolsDir 'open-file.ps1'
+$toolsDir   = $PSScriptRoot
+$viewerDir  = Split-Path -Parent $toolsDir
+$openPs1    = Join-Path $toolsDir 'open-file.ps1'
 $wrapperCmd = Join-Path $toolsDir 'open-file.cmd'
 
 if (-not (Test-Path -LiteralPath $openPs1)) {
@@ -37,32 +41,89 @@ Set-Content -LiteralPath $wrapperCmd -Value $cmdContent -Encoding ASCII
 Write-Host "Wrote launcher: $wrapperCmd"
 
 # ---- register an Application entry under HKCU\Software\Classes ----
-$appKey      = 'HKCU:\Software\Classes\Applications\localViewer.cmd'
-$shellOpen   = "$appKey\shell\open\command"
-$friendly    = "$appKey"
+$appKey    = 'HKCU:\Software\Classes\Applications\localViewer.cmd'
+$shellOpen = "$appKey\shell\open\command"
 
 New-Item -Path $shellOpen -Force | Out-Null
 Set-ItemProperty -Path $shellOpen -Name '(default)' -Value "`"$wrapperCmd`" `"%1`""
-Set-ItemProperty -Path $friendly  -Name 'FriendlyAppName' -Value 'localViewer'
+Set-ItemProperty -Path $appKey    -Name 'FriendlyAppName' -Value 'localViewer'
+
 # SupportedTypes — extensions Explorer will offer this app for
 $supportedTypes = "$appKey\SupportedTypes"
 New-Item -Path $supportedTypes -Force | Out-Null
-Set-ItemProperty -Path $supportedTypes -Name '.md'   -Value ''
-Set-ItemProperty -Path $supportedTypes -Name '.stl'  -Value ''
-Set-ItemProperty -Path $supportedTypes -Name '.3mf'  -Value ''
-
-# ---- add to OpenWithList for each extension ----
 foreach ($ext in @('.md', '.stl', '.3mf')) {
-    $owp = "HKCU:\Software\Classes\$ext\OpenWithProgids"
-    New-Item -Path $owp -Force | Out-Null
-    Set-ItemProperty -Path $owp -Name 'Applications\localViewer.cmd' -Value ''
-    $owl = "HKCU:\Software\Classes\$ext\OpenWithList\localViewer.cmd"
-    New-Item -Path $owl -Force | Out-Null
+    Set-ItemProperty -Path $supportedTypes -Name $ext -Value ''
+}
+
+# ---- add to OpenWithList for each extension, in BOTH locations ----
+# Location 1: HKCU\Software\Classes\<.ext>\OpenWithList\<app> (key form)
+# Location 2: HKCU\...\Explorer\FileExts\<.ext>\OpenWithList (value form, what Explorer actually reads)
+foreach ($ext in @('.md', '.stl', '.3mf')) {
+
+    # Classes form
+    $classesList = "HKCU:\Software\Classes\$ext\OpenWithList\localViewer.cmd"
+    New-Item -Path $classesList -Force | Out-Null
+
+    # FileExts form — Explorer's per-user menu
+    $fileExts = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\OpenWithList"
+    New-Item -Path $fileExts -Force | Out-Null
+
+    # Find the next free letter slot (a, b, c, ...)
+    $existing = Get-ItemProperty -Path $fileExts -ErrorAction SilentlyContinue
+    $slots = @()
+    if ($existing) {
+        foreach ($p in $existing.PSObject.Properties) {
+            if ($p.Name -match '^[a-z]$') {
+                if ($p.Value -eq 'localViewer.cmd') { $slots = @($p.Name); break }
+                $slots += $p.Name
+            }
+        }
+    }
+    if ($slots.Count -eq 0 -or $slots[0] -ne ($slots[0])) {
+        # nothing yet, use 'a'
+        $letter = 'a'
+    } else {
+        # find first unused letter
+        $used = @{}
+        foreach ($s in $slots) { $used[$s] = $true }
+        $letter = $null
+        foreach ($c in [char[]]'abcdefghijklmnopqrstuvwxyz') {
+            if (-not $used.ContainsKey([string]$c)) { $letter = [string]$c; break }
+        }
+        if (-not $letter) { $letter = 'z' }
+    }
+
+    Set-ItemProperty -Path $fileExts -Name $letter -Value 'localViewer.cmd'
+
+    # Maintain MRUList (prepend our letter if not present)
+    $mru = (Get-ItemProperty -Path $fileExts -Name 'MRUList' -ErrorAction SilentlyContinue).MRUList
+    if (-not $mru) { $mru = '' }
+    if ($mru -notmatch [regex]::Escape($letter)) { $mru = $letter + $mru }
+    Set-ItemProperty -Path $fileExts -Name 'MRUList' -Value $mru
+}
+
+# ---- restart Explorer so it re-reads the menu ----
+Write-Host ""
+Write-Host "Registered localViewer for: .md  .stl  .3mf" -ForegroundColor Green
+Write-Host ""
+
+$ans = Read-Host "Restart Explorer now so the menu refreshes? [Y/n]"
+if ($ans -eq '' -or $ans -match '^[Yy]') {
+    Get-Process explorer -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Milliseconds 600
+    if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) {
+        Start-Process explorer.exe
+    }
+    Write-Host "Explorer restarted." -ForegroundColor Green
+} else {
+    Write-Host "Skipped. Sign out + back in (or restart Explorer manually) for the menu to refresh."
 }
 
 Write-Host ""
-Write-Host "Registered localViewer for: .md  .stl  .3mf" -ForegroundColor Green
-Write-Host "Right-click a file -> Open with -> localViewer."
-Write-Host "To set as default: Open with -> Choose another app -> localViewer -> Always."
+Write-Host "Use:    Right-click .md/.stl/.3mf file -> Open with -> localViewer"
+Write-Host "        (If still missing: Open with -> Choose another app -> More apps ->"
+Write-Host "         scroll down -> Look for another app on this PC ->"
+Write-Host "         pick $wrapperCmd)"
 Write-Host ""
-Write-Host "Uninstall with: unregister-windows.ps1"
+Write-Host "To set as default: Open with -> Choose another app -> localViewer -> Always."
+Write-Host "Uninstall with:    unregister-windows.ps1"
