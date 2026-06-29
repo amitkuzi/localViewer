@@ -7,6 +7,8 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **STL (`.stl`)**, and **3M
 - On Windows you can right-click a file in File Explorer → **Open with → localViewer**.
 - The header shows the current file's name and path, with an **Open folder** button that
   copies the containing folder to the clipboard (browsers can't open Explorer directly).
+- **Multiple files open at once** — each opens in its own tab; drop or pick several at a time,
+  click a tab to switch, click × to close. Re-opening the same file re-uses its tab.
 
 ## Try it
 

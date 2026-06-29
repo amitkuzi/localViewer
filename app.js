@@ -4,18 +4,23 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
-import { detectKind, fileMeta } from './src/format.js';
+import { fileMeta } from './src/format.js';
 import { renderFileMeta } from './src/header.js';
+import { TabStore } from './src/tabs.js';
+import { renderTabBar } from './src/tabbar.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
       panel = $('panel'), info = $('info'), err = $('err'),
       kindBadge = $('kindBadge'), picker = $('picker'),
       fileInfo = $('fileInfo'), fileName = $('fileName'), filePath = $('filePath'),
-      openFolderBtn = $('openFolderBtn');
+      openFolderBtn = $('openFolderBtn'), tabbar = $('tabbar');
 
 // The folder of the file currently shown, for "Open folder".
 let activeFolder = '';
+
+// One tab per open document. Switching tabs re-renders from the cached payload.
+const store = new TabStore();
 
 let renderer, scene, camera, controls, currentMesh, gridHelper;
 
@@ -188,25 +193,44 @@ async function load3MF(buffer) {
   show('3d'); fitView();
 }
 
+// ---- tabs: render the active document, redraw the tab strip ----
+function renderActive() {
+  const tab = store.active;
+  if (!tab) {
+    kindBadge.textContent = 'no file';
+    setActiveFileMeta(null);
+    show('drop');
+    return;
+  }
+  kindBadge.textContent = tab.kind.toUpperCase();
+  setActiveFileMeta(tab.meta);
+  if (tab.kind === 'md') renderMarkdown(tab.payload.text);
+  else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
+  else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
+}
+
+store.subscribe(() => {
+  renderTabBar(tabbar, store, {
+    onActivate: (id) => store.activate(id),
+    onClose:    (id) => store.close(id)
+  });
+  renderActive();
+});
+
 // ---- entrypoint ----
 // `source` is the most informative locator we have (full URL, ?path=, or just
 // the file name) and drives the header path display + "Open folder".
 async function loadFromBlob(name, blob, source) {
   const meta = fileMeta(name, source);
-  kindBadge.textContent = meta.kind ? meta.kind.toUpperCase() : 'unknown';
   if (!meta.kind) {
-    setActiveFileMeta(null);
+    kindBadge.textContent = 'unknown';
     return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf`);
   }
   try {
-    if (meta.kind === 'md') {
-      renderMarkdown(await blob.text());
-    } else {
-      const buf = await blob.arrayBuffer();
-      if (meta.kind === 'stl') await loadSTL(buf);
-      else                     await load3MF(buf);
-    }
-    setActiveFileMeta(meta);
+    const payload = meta.kind === 'md'
+      ? { text: await blob.text() }
+      : { buffer: await blob.arrayBuffer() };
+    store.open({ name, source: meta.source, kind: meta.kind, meta, payload });
   } catch (e) {
     console.error(e);
     showError(`Failed to load ${name}\n\n${e.message || e}`);
@@ -221,10 +245,14 @@ async function loadFromURL(url) {
   return loadFromBlob(name, blob, url);
 }
 
+function loadFiles(files) {
+  for (const f of files) loadFromBlob(f.name, f);
+}
+
 // ---- input handlers ----
 picker.addEventListener('change', (e) => {
-  const f = e.target.files?.[0];
-  if (f) loadFromBlob(f.name, f);
+  if (e.target.files?.length) loadFiles(e.target.files);
+  e.target.value = ''; // allow re-opening the same file
 });
 
 ['dragenter','dragover'].forEach(ev =>
@@ -232,8 +260,7 @@ picker.addEventListener('change', (e) => {
 ['dragleave','drop'].forEach(ev =>
   window.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
 window.addEventListener('drop', (e) => {
-  const f = e.dataTransfer?.files?.[0];
-  if (f) loadFromBlob(f.name, f);
+  if (e.dataTransfer?.files?.length) loadFiles(e.dataTransfer.files);
 });
 
 // ---- File Handling API: launched from the OS (installed PWA) ----
@@ -244,9 +271,10 @@ if ('launchQueue' in window && 'LaunchParams' in window) {
   launchQueue.setConsumer(async (launchParams) => {
     if (!launchParams.files || !launchParams.files.length) return;
     try {
-      const handle = launchParams.files[0];
-      const file = await handle.getFile();
-      loadFromBlob(file.name, file);
+      for (const handle of launchParams.files) {
+        const file = await handle.getFile();
+        await loadFromBlob(file.name, file);
+      }
     } catch (e) {
       console.error(e);
       showError('Failed to open the launched file.\n\n' + (e.message || e));

@@ -27,8 +27,9 @@
   *{box-sizing:border-box}
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:ui-sans-serif,system-ui,Segoe UI,Roboto,sans-serif}
+  body{display:flex;flex-direction:column}
   header{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;
-    border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+    border-bottom:1px solid var(--line);background:var(--panel);z-index:5;flex:0 0 auto}
   header h1{font-size:1rem;margin:0;font-weight:600;letter-spacing:.02em}
   header .badge{font-size:.7rem;color:var(--muted);border:1px solid var(--line);
     border-radius:999px;padding:.1rem .5rem}
@@ -41,7 +42,19 @@
     border:1px solid var(--line);border-radius:8px;padding:.35rem .65rem;cursor:pointer}
   header button:hover,header label:hover{border-color:var(--accent)}
   header input[type=file]{display:none}
-  main{position:relative;height:calc(100% - 49px)}
+  #tabbar{display:flex;gap:.25rem;padding:.3rem .5rem 0;background:var(--panel);
+    border-bottom:1px solid var(--line);overflow-x:auto;flex:0 0 auto}
+  #tabbar .tab{display:flex;align-items:center;gap:.4rem;padding:.3rem .6rem;cursor:pointer;
+    border:1px solid var(--line);border-bottom:none;border-radius:8px 8px 0 0;
+    background:#0f1318;color:var(--muted);max-width:240px;font-size:.85rem}
+  #tabbar .tab:hover{color:var(--text);border-color:var(--accent)}
+  #tabbar .tab.active{background:var(--bg);color:var(--text);border-color:var(--line);
+    box-shadow:inset 0 2px 0 var(--accent)}
+  #tabbar .tab-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #tabbar .tab-close{font:inherit;line-height:1;color:var(--muted);background:transparent;
+    border:none;border-radius:4px;padding:0 .25rem;cursor:pointer}
+  #tabbar .tab-close:hover{color:#ff9090;background:rgba(255,144,144,.12)}
+  main{position:relative;flex:1 1 auto;min-height:0}
   #drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     flex-direction:column;gap:.75rem;color:var(--muted);padding:2rem;text-align:center}
   #drop.over{background:rgba(108,182,255,.08);outline:2px dashed var(--accent);outline-offset:-12px}
@@ -82,9 +95,11 @@
   <span class="spacer"></span>
   <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf">
-  <button id="installBtn" hidden>Install app</button>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf" multiple>
+  <button id="installBtn" type="button" hidden>Install app</button>
 </header>
+
+<nav id="tabbar" role="tablist" hidden></nav>
 
 <main>
   <div id="drop">
