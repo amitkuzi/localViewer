@@ -20,6 +20,7 @@
       "accept": {
         "text/markdown": [".md", ".markdown"],
         "text/plain": [".txt"],
+        "application/yaml": [".yaml", ".yml"],
         "model/stl": [".stl"],
         "application/sla": [".stl"],
         "model/3mf": [".3mf"],

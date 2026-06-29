@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($p = Get-NetTCPConnection -State Listen -LocalPort 3000 -ErrorAction SilentlyContinue; if \\($p\\) { \"Port 3000 in use by PID\\(s\\): \" + \\($p.OwningProcess -join ', '\\); Get-Process -Id $p.OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime | Format-Table -AutoSize | Out-String } else { \"No process listening on port 3000\" }; \"--- node processes ---\"; Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, StartTime | Format-Table -AutoSize | Out-String)",
+       "Read",
+      "Edit",
+      "Bash(*)",
+      "Bash (npm*)",
+      "Bash (git*)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  }
+}

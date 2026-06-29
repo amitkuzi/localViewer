@@ -4,17 +4,20 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { load as parseYaml } from 'js-yaml';
 import { fileMeta } from './src/format.js';
 import { renderFileMeta } from './src/header.js';
 import { TabStore } from './src/tabs.js';
 import { renderTabBar } from './src/tabbar.js';
+import { renderYamlValue, setAllOpen } from './src/yamlview.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
       panel = $('panel'), info = $('info'), err = $('err'),
       kindBadge = $('kindBadge'), picker = $('picker'),
       fileInfo = $('fileInfo'), fileName = $('fileName'), filePath = $('filePath'),
-      openFolderBtn = $('openFolderBtn'), tabbar = $('tabbar');
+      openFolderBtn = $('openFolderBtn'), tabbar = $('tabbar'),
+      yamlEl = $('yaml'), yamlTree = $('yamlTree');
 
 // The folder of the file currently shown, for "Open folder".
 let activeFolder = '';
@@ -28,12 +31,27 @@ let renderer, scene, camera, controls, currentMesh, gridHelper;
 function show(view) {
   drop.style.display    = view === 'drop' ? 'flex' : 'none';
   mdEl.style.display    = view === 'md'   ? 'block': 'none';
+  yamlEl.style.display  = view === 'yaml' ? 'flex' : 'none';
   threeEl.style.display = view === '3d'   ? 'block': 'none';
   panel.hidden          = view !== '3d';
   err.style.display     = view === 'err'  ? 'flex' : 'none';
   info.style.display    = view === '3d'   ? 'block': 'none';
 }
 function showError(msg) { err.textContent = msg; show('err'); }
+
+// ---- YAML ----
+function renderYamlDoc(text) {
+  let value;
+  try {
+    value = parseYaml(text);
+  } catch (e) {
+    return showError('Invalid YAML\n\n' + (e.message || e));
+  }
+  renderYamlValue(yamlTree, value);
+  show('yaml');
+}
+$('yExpand').addEventListener('click', () => setAllOpen(yamlTree, true));
+$('yCollapse').addEventListener('click', () => setAllOpen(yamlTree, false));
 
 // ---- header: file name / path + "open folder" ----
 function setActiveFileMeta(meta) {
@@ -205,6 +223,7 @@ function renderActive() {
   kindBadge.textContent = tab.kind.toUpperCase();
   setActiveFileMeta(tab.meta);
   if (tab.kind === 'md') renderMarkdown(tab.payload.text);
+  else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
 }
@@ -227,7 +246,7 @@ async function loadFromBlob(name, blob, source) {
     return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf`);
   }
   try {
-    const payload = meta.kind === 'md'
+    const payload = (meta.kind === 'md' || meta.kind === 'yaml')
       ? { text: await blob.text() }
       : { buffer: await blob.arrayBuffer() };
     store.open({ name, source: meta.source, kind: meta.kind, meta, payload });

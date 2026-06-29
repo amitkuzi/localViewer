@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101418">
-<title>localViewer — MD / STL / 3MF</title>
+<title>localViewer — MD / YAML / STL / 3MF</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
@@ -14,7 +14,8 @@
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
     "marked": "https://cdn.jsdelivr.net/npm/marked@12.0.0/lib/marked.esm.js",
-    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.es.mjs"
+    "dompurify": "https://cdn.jsdelivr.net/npm/dompurify@3.0.9/dist/purify.es.mjs",
+    "js-yaml": "https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.mjs"
   }
 }
 </script>
@@ -67,6 +68,30 @@
   #md table{border-collapse:collapse}
   #md th,#md td{border:1px solid var(--line);padding:.3rem .55rem}
   #md a{color:var(--accent)}
+  #yaml{display:none;flex-direction:column;height:100%;overflow:hidden}
+  #yaml .y-toolbar{display:flex;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--line);
+    background:var(--panel)}
+  #yaml .y-toolbar button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+    border-radius:6px;padding:.25rem .6rem;cursor:pointer}
+  #yaml .y-toolbar button:hover{border-color:var(--accent)}
+  #yaml .y-tree{padding:1rem 1.25rem;overflow:auto;max-width:980px;margin:0 auto;width:100%;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86rem;line-height:1.7}
+  .y-children{margin-left:1.1rem;border-left:1px solid var(--line);padding-left:.8rem}
+  .y-row{padding:.05rem 0}
+  details.y-node>summary{cursor:pointer;list-style:none;user-select:none;padding:.05rem 0}
+  details.y-node>summary::-webkit-details-marker{display:none}
+  details.y-node>summary::before{content:"\25B6";display:inline-block;width:1em;color:var(--muted);
+    font-size:.7em;transition:transform .12s}
+  details.y-node[open]>summary::before{transform:rotate(90deg)}
+  .y-key{color:var(--accent);margin-right:.15rem}
+  .y-key::after{content:":";color:var(--muted)}
+  .y-badge{color:var(--muted);font-size:.8em}
+  .y-empty{color:var(--muted)}
+  .y-val{margin-left:.35rem}
+  .y-string{color:var(--accent-2)}
+  .y-number{color:#f0b36b}
+  .y-boolean{color:#d39bff}
+  .y-null{color:var(--muted);font-style:italic}
   #three{display:none;width:100%;height:100%}
   #info{position:absolute;left:.75rem;bottom:.75rem;background:rgba(16,20,24,.85);
     border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
@@ -103,11 +128,18 @@
 
 <main>
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.stl</code>, or <code>.3mf</code> file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, or <code>.3mf</code> file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
   <article id="md"></article>
+  <section id="yaml">
+    <div class="y-toolbar">
+      <button id="yExpand" type="button">Expand all</button>
+      <button id="yCollapse" type="button">Collapse all</button>
+    </div>
+    <div id="yamlTree" class="y-tree"></div>
+  </section>
   <div id="three"></div>
   <div id="panel" hidden>
     <label>Color <input id="colorPick" type="color" value="#8fb8e6"></label>
