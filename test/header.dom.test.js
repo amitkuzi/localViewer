@@ -33,12 +33,14 @@ describe('renderFileMeta (DOM)', () => {
     expect(document.title).toBe('part.stl — localViewer');
   });
 
-  it('hides the folder button when only a bare name is known', () => {
+  it('shows the button but no path/folder for a bare name', () => {
     const folder = renderFileMeta(els, fileMeta('notes.md'));
     expect(els.fileInfo.hidden).toBe(false);
     expect(els.fileName.textContent).toBe('notes.md');
     expect(els.filePath.textContent).toBe(''); // no richer path than the name
-    expect(els.openFolderBtn.hidden).toBe(true);
+    // The button is always shown for an open file; its handler decides what it
+    // can do (no folder here, so it would explain the picker limitation).
+    expect(els.openFolderBtn.hidden).toBe(false);
     expect(folder).toBe('');
   });
 

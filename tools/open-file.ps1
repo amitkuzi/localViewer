@@ -49,9 +49,12 @@ $boundPort = $listener.LocalEndpoint.Port
 Write-Host "localViewer serving on http://127.0.0.1:$boundPort/"
 
 # ---- open Edge in app mode ----
-$srcParam = '/file/' + [uri]::EscapeDataString($fileName)
-$url      = "http://127.0.0.1:$boundPort/?src=$srcParam"
-$edgeArgs = @("--app=$url", "--new-window")
+# Pass the real on-disk path too, so the viewer can show it and reveal the
+# file in Explorer via the /__open-folder endpoint below.
+$srcParam  = '/file/' + [uri]::EscapeDataString($fileName)
+$pathParam = [uri]::EscapeDataString($file.FullName)
+$url       = "http://127.0.0.1:$boundPort/?src=$srcParam&path=$pathParam"
+$edgeArgs  = @("--app=$url", "--new-window")
 
 $edgeExe = $null
 foreach ($cand in @(
@@ -139,6 +142,20 @@ try {
             $method  = $parts[0]
             $target  = $parts[1]
             $urlPath = ($target -split '\?')[0]
+
+            # Reveal the served file in Explorer. No client input is trusted —
+            # the server already knows exactly which file it is serving.
+            if ($urlPath -eq '/__open-folder') {
+                try {
+                    Start-Process explorer.exe -ArgumentList "/select,`"$($file.FullName)`"" | Out-Null
+                    $b = [System.Text.Encoding]::UTF8.GetBytes('ok')
+                    Send-Response $stream "200 OK" @{ 'Content-Type' = 'text/plain'; 'Cache-Control' = 'no-store' } $b
+                } catch {
+                    $b = [System.Text.Encoding]::UTF8.GetBytes('error')
+                    Send-Response $stream "500 Internal Server Error" @{ 'Content-Type' = 'text/plain' } $b
+                }
+                $client.Close(); continue
+            }
 
             if ($method -ne 'GET' -and $method -ne 'HEAD') {
                 $b = [System.Text.Encoding]::UTF8.GetBytes('Method not allowed')

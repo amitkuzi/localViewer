@@ -5,7 +5,7 @@ import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { load as parseYaml } from 'js-yaml';
-import { fileMeta } from './src/format.js';
+import { fileMeta, basename } from './src/format.js';
 import { renderFileMeta } from './src/header.js';
 import { TabStore } from './src/tabs.js';
 import { renderTabBar } from './src/tabbar.js';
@@ -59,17 +59,30 @@ function setActiveFileMeta(meta) {
     { fileInfo, fileName, filePath, openFolderBtn }, meta);
 }
 
+// True when served by the local PowerShell helper (loopback origin), which can
+// actually open Explorer for us via its /__open-folder endpoint.
+const onHelper = ['127.0.0.1', 'localhost'].includes(location.hostname);
+
 async function openContainingFolder() {
-  if (!activeFolder) {
-    showToast('No folder path is available — sandboxed browsers hide local file paths.');
+  // Best case: the Windows helper reveals the file in Explorer.
+  if (onHelper) {
+    try {
+      const res = await fetch('/__open-folder', { method: 'POST' });
+      if (res.ok) { showToast('Revealed the file in Explorer.'); return; }
+    } catch { /* fall through to clipboard */ }
+  }
+  // Otherwise we can only work with whatever path we were given.
+  if (activeFolder) {
+    try {
+      await navigator.clipboard.writeText(activeFolder);
+      showToast('Folder path copied to clipboard:\n' + activeFolder);
+    } catch {
+      showToast('Containing folder:\n' + activeFolder);
+    }
     return;
   }
-  try {
-    await navigator.clipboard.writeText(activeFolder);
-    showToast('Folder path copied to clipboard:\n' + activeFolder);
-  } catch {
-    showToast('Containing folder:\n' + activeFolder);
-  }
+  showToast('Browsers hide local file paths from the file picker.\n'
+    + 'Right-click the file → Open with → localViewer to enable Explorer integration.', 9000);
 }
 openFolderBtn.addEventListener('click', openContainingFolder);
 
@@ -256,12 +269,15 @@ async function loadFromBlob(name, blob, source) {
   }
 }
 
-async function loadFromURL(url) {
-  const name = url.split(/[?#]/)[0].split('/').pop() || 'remote';
+// `sourceOverride` is the real on-disk path when the Windows helper passes
+// ?path=; it drives the header path display and "Open folder".
+async function loadFromURL(url, sourceOverride) {
+  const name = (sourceOverride ? basename(sourceOverride) : url.split(/[?#]/)[0].split('/').pop())
+    || 'remote';
   const res = await fetch(url);
   if (!res.ok) return showError(`Fetch failed: HTTP ${res.status}\n${url}`);
   const blob = await res.blob();
-  return loadFromBlob(name, blob, url);
+  return loadFromBlob(name, blob, sourceOverride || url);
 }
 
 function loadFiles(files) {
@@ -302,6 +318,9 @@ if ('launchQueue' in window && 'LaunchParams' in window) {
 }
 
 // ---- auto-load via ?src= (used by the local PowerShell helper) ----
+// ?path= carries the real on-disk path so the header can show it and the
+// "Open folder" button can reveal the file in Explorer.
 const params = new URLSearchParams(location.search);
 const src = params.get('src');
-if (src) loadFromURL(src);
+const path = params.get('path');
+if (src) loadFromURL(src, path || undefined);

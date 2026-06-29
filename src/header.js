@@ -1,10 +1,12 @@
 // DOM rendering for the header file-info area. Kept free of CDN imports so it
 // can be exercised under jsdom. Takes element references explicitly rather than
 // reaching for globals, which makes it straightforward to integration-test.
-import { titleFor, hasResolvablePath } from './format.js';
+import { titleFor } from './format.js';
 
 // Update the header from a fileMeta (or null to clear). Returns the active
 // folder string ('' when none) so the caller can wire "Open folder".
+// The Open-folder button is shown whenever a file is open; its click handler
+// decides what it can actually do (reveal in Explorer / copy the path).
 // `els` = { fileInfo, fileName, filePath, openFolderBtn, doc? }
 export function renderFileMeta(els, meta) {
   const doc = els.doc || (typeof document !== 'undefined' ? document : null);
@@ -19,7 +21,7 @@ export function renderFileMeta(els, meta) {
     meta.displayPath && meta.displayPath !== meta.name ? meta.displayPath : '';
   els.filePath.title = meta.displayPath || '';
   els.fileInfo.hidden = false;
-  els.openFolderBtn.hidden = !hasResolvablePath(meta.source);
+  els.openFolderBtn.hidden = false;
   if (doc) doc.title = titleFor(meta.name);
   return meta.folder || '';
 }

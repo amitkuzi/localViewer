@@ -5,8 +5,11 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
 - On Windows you can right-click a file in File Explorer → **Open with → localViewer**.
-- The header shows the current file's name and path, with an **Open folder** button that
-  copies the containing folder to the clipboard (browsers can't open Explorer directly).
+- The header shows the current file's name and path, with an **Open folder** button.
+  When you open a file through the Windows helper (*Open with → localViewer*), the button
+  **reveals the file in Explorer** and the full on-disk path is shown. When you instead
+  drag-drop or pick a file, the browser only exposes the file *name* (it hides local paths
+  for security), so the button explains how to get the Explorer integration.
 - **Multiple files open at once** — each opens in its own tab; drop or pick several at a time,
   click a tab to switch, click × to close. Re-opening the same file re-uses its tab.
 - **YAML viewer** — `.yaml`/`.yml` render as a foldable tree with collapsible sections.
