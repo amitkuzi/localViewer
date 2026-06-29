@@ -4,11 +4,18 @@ import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { detectKind, fileMeta } from './src/format.js';
+import { renderFileMeta } from './src/header.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
       panel = $('panel'), info = $('info'), err = $('err'),
-      kindBadge = $('kindBadge'), picker = $('picker');
+      kindBadge = $('kindBadge'), picker = $('picker'),
+      fileInfo = $('fileInfo'), fileName = $('fileName'), filePath = $('filePath'),
+      openFolderBtn = $('openFolderBtn');
+
+// The folder of the file currently shown, for "Open folder".
+let activeFolder = '';
 
 let renderer, scene, camera, controls, currentMesh, gridHelper;
 
@@ -23,13 +30,30 @@ function show(view) {
 }
 function showError(msg) { err.textContent = msg; show('err'); }
 
-// ---- file kind detection ----
-function detectKind(name) {
-  const n = name.toLowerCase();
-  if (n.endsWith('.md') || n.endsWith('.markdown') || n.endsWith('.txt')) return 'md';
-  if (n.endsWith('.stl')) return 'stl';
-  if (n.endsWith('.3mf')) return '3mf';
-  return null;
+// ---- header: file name / path + "open folder" ----
+function setActiveFileMeta(meta) {
+  activeFolder = renderFileMeta(
+    { fileInfo, fileName, filePath, openFolderBtn }, meta);
+}
+
+async function openContainingFolder() {
+  if (!activeFolder) {
+    showToast('No folder path is available — sandboxed browsers hide local file paths.');
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(activeFolder);
+    showToast('Folder path copied to clipboard:\n' + activeFolder);
+  } catch {
+    showToast('Containing folder:\n' + activeFolder);
+  }
+}
+openFolderBtn.addEventListener('click', openContainingFolder);
+
+// Bridge to the install toast defined in index.html (falls back to console).
+function showToast(msg, ms) {
+  if (typeof window.showToast === 'function') return window.showToast(msg, ms);
+  console.log(msg);
 }
 
 // ---- Markdown ----
@@ -165,19 +189,24 @@ async function load3MF(buffer) {
 }
 
 // ---- entrypoint ----
-async function loadFromBlob(name, blob) {
-  const kind = detectKind(name);
-  kindBadge.textContent = kind ? kind.toUpperCase() : 'unknown';
-  if (!kind) return showError(`Unsupported file: ${name}\nSupported: .md, .stl, .3mf`);
+// `source` is the most informative locator we have (full URL, ?path=, or just
+// the file name) and drives the header path display + "Open folder".
+async function loadFromBlob(name, blob, source) {
+  const meta = fileMeta(name, source);
+  kindBadge.textContent = meta.kind ? meta.kind.toUpperCase() : 'unknown';
+  if (!meta.kind) {
+    setActiveFileMeta(null);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf`);
+  }
   try {
-    if (kind === 'md') {
+    if (meta.kind === 'md') {
       renderMarkdown(await blob.text());
     } else {
       const buf = await blob.arrayBuffer();
-      if (kind === 'stl') await loadSTL(buf);
-      else                await load3MF(buf);
+      if (meta.kind === 'stl') await loadSTL(buf);
+      else                     await load3MF(buf);
     }
-    document.title = `${name} — localViewer`;
+    setActiveFileMeta(meta);
   } catch (e) {
     console.error(e);
     showError(`Failed to load ${name}\n\n${e.message || e}`);
@@ -189,7 +218,7 @@ async function loadFromURL(url) {
   const res = await fetch(url);
   if (!res.ok) return showError(`Fetch failed: HTTP ${res.status}\n${url}`);
   const blob = await res.blob();
-  return loadFromBlob(name, blob);
+  return loadFromBlob(name, blob, url);
 }
 
 // ---- input handlers ----

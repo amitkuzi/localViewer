@@ -5,6 +5,8 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **STL (`.stl`)**, and **3M
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
 - On Windows you can right-click a file in File Explorer → **Open with → localViewer**.
+- The header shows the current file's name and path, with an **Open folder** button that
+  copies the containing folder to the clipboard (browsers can't open Explorer directly).
 
 ## Try it
 

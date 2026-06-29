@@ -1,0 +1,15 @@
+{
+  "name": "localviewer",
+  "version": "1.0.0",
+  "description": "Local viewer for Markdown, YAML, STL and 3MF files.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0",
+    "vitest": "^1.6.0"
+  }
+}

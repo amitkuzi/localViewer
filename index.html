@@ -33,6 +33,10 @@
   header .badge{font-size:.7rem;color:var(--muted);border:1px solid var(--line);
     border-radius:999px;padding:.1rem .5rem}
   header .spacer{flex:1}
+  header .fileinfo{display:flex;align-items:baseline;gap:.5rem;min-width:0;overflow:hidden}
+  header .fileinfo .fname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:32ch}
+  header .fileinfo .fpath{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:48ch;direction:rtl;text-align:left}
   header button,header label{font:inherit;color:var(--text);background:transparent;
     border:1px solid var(--line);border-radius:8px;padding:.35rem .65rem;cursor:pointer}
   header button:hover,header label:hover{border-color:var(--accent)}
@@ -71,9 +75,14 @@
 <header>
   <h1>localViewer</h1>
   <span class="badge" id="kindBadge">no file</span>
+  <span class="fileinfo" id="fileInfo" hidden>
+    <span class="fname" id="fileName"></span>
+    <span class="fpath" id="filePath"></span>
+  </span>
   <span class="spacer"></span>
+  <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.stl,.3mf">
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf">
   <button id="installBtn" hidden>Install app</button>
 </header>
 

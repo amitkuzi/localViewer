@@ -4,5 +4,9 @@ tools/open-file.cmd
 # editor / OS junk
 .vscode/
 .idea/
+.vs/
 .DS_Store
 Thumbs.db
+
+# node / tooling
+node_modules/
