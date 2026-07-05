@@ -18,8 +18,15 @@ describe('detectKind', () => {
     expect(detectKind('part.stl')).toBe('stl');
     expect(detectKind('Part.3MF')).toBe('3mf');
   });
+  it('recognises image formats', () => {
+    expect(detectKind('photo.png')).toBe('image');
+    expect(detectKind('Photo.JPG')).toBe('image');
+    expect(detectKind('anim.gif')).toBe('image');
+    expect(detectKind('pic.webp')).toBe('image');
+    expect(detectKind('icon.svg')).toBe('image');
+  });
   it('returns null for unsupported / empty', () => {
-    expect(detectKind('photo.png')).toBeNull();
+    expect(detectKind('archive.zip')).toBeNull();
     expect(detectKind('')).toBeNull();
     expect(detectKind(undefined)).toBeNull();
   });

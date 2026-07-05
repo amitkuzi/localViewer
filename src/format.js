@@ -3,6 +3,9 @@
 
 const APP_NAME = 'localViewer';
 
+// Raster and vector image extensions we render through an <img> element.
+const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif', '.svg'];
+
 // Map a file name to the internal viewer kind, or null if unsupported.
 export function detectKind(name) {
   const n = String(name || '').toLowerCase();
@@ -10,6 +13,7 @@ export function detectKind(name) {
   if (n.endsWith('.yaml') || n.endsWith('.yml')) return 'yaml';
   if (n.endsWith('.stl')) return 'stl';
   if (n.endsWith('.3mf')) return '3mf';
+  if (IMAGE_EXT.some(ext => n.endsWith(ext))) return 'image';
   return null;
 }
 
@@ -40,7 +44,7 @@ export function hasResolvablePath(path) {
 
 // Window/tab title for the currently shown file.
 export function titleFor(name) {
-  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / STL / 3MF`;
+  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / STL / 3MF / images`;
 }
 
 // Build the metadata shown in the header for an opened file.

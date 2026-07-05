@@ -2,7 +2,7 @@
   "id": "./",
   "name": "localViewer",
   "short_name": "Viewer",
-  "description": "Local viewer for Markdown, STL and 3MF files.",
+  "description": "Local viewer for Markdown, YAML, STL, 3MF, SVG and image files.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -24,7 +24,15 @@
         "model/stl": [".stl"],
         "application/sla": [".stl"],
         "model/3mf": [".3mf"],
-        "application/vnd.ms-3mfdocument": [".3mf"]
+        "application/vnd.ms-3mfdocument": [".3mf"],
+        "image/svg+xml": [".svg"],
+        "image/png": [".png"],
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/gif": [".gif"],
+        "image/webp": [".webp"],
+        "image/bmp": [".bmp"],
+        "image/x-icon": [".ico"],
+        "image/avif": [".avif"]
       },
       "icons": [
         { "src": "icons/icon.svg", "type": "image/svg+xml", "sizes": "any" }

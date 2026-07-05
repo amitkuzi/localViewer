@@ -1,6 +1,6 @@
 # localViewer
 
-A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **STL (`.stl`)**, and **3MF (`.3mf`)** files.
+A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
@@ -14,6 +14,8 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
   click a tab to switch, click × to close. Re-opening the same file re-uses its tab.
 - **YAML viewer** — `.yaml`/`.yml` render as a foldable tree with collapsible sections.
   Deep or large blocks start collapsed; **Expand all** / **Collapse all** toggle everything.
+- **Image viewer** — SVG and raster images with pan (drag), zoom (wheel or **+**/**−**),
+  **Fit** / **100%**, and a dark / checker / light background toggle to inspect transparency.
 
 ## Try it
 

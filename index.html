@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101418">
-<title>localViewer — MD / YAML / STL / 3MF</title>
+<title>localViewer — MD / YAML / STL / 3MF / images</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
@@ -92,6 +92,32 @@
   .y-number{color:#f0b36b}
   .y-boolean{color:#d39bff}
   .y-null{color:var(--muted);font-style:italic}
+  #image{display:none;position:absolute;inset:0;overflow:hidden;
+    align-items:center;justify-content:center;user-select:none;touch-action:none}
+  #image.bg-dark{background:var(--bg)}
+  #image.bg-light{background:#f5f5f5}
+  #image.bg-check{background-color:#0b0e12;
+    background-image:linear-gradient(45deg,#1b2128 25%,transparent 25%),
+      linear-gradient(-45deg,#1b2128 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#1b2128 75%),
+      linear-gradient(-45deg,transparent 75%,#1b2128 75%);
+    background-size:20px 20px;background-position:0 0,0 10px,10px -10px,-10px 0}
+  #image img{position:absolute;top:0;left:0;max-width:none;transform-origin:0 0;
+    image-rendering:auto;box-shadow:0 4px 24px rgba(0,0,0,.5);will-change:transform}
+  #image.dragging{cursor:grabbing}
+  #imgPanel{position:absolute;right:.75rem;top:.75rem;background:rgba(16,20,24,.85);
+    border:1px solid var(--line);border-radius:10px;padding:.55rem .65rem;font-size:.85rem;
+    display:flex;flex-direction:column;gap:.4rem;min-width:180px;backdrop-filter:blur(6px)}
+  #imgPanel .row{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:var(--muted)}
+  #imgPanel .btns{display:flex;gap:.35rem}
+  #imgPanel button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+    border-radius:6px;padding:.25rem .5rem;cursor:pointer;flex:1}
+  #imgPanel button:hover{border-color:var(--accent)}
+  #imgPanel select{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+    border-radius:6px;padding:.2rem .4rem}
+  #imgInfo{position:absolute;left:.75rem;bottom:.75rem;background:rgba(16,20,24,.85);
+    border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
+    pointer-events:none;backdrop-filter:blur(6px)}
   #three{display:none;width:100%;height:100%}
   #info{position:absolute;left:.75rem;bottom:.75rem;background:rgba(16,20,24,.85);
     border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
@@ -99,6 +125,8 @@
   #panel{position:absolute;right:.75rem;top:.75rem;background:rgba(16,20,24,.85);
     border:1px solid var(--line);border-radius:10px;padding:.55rem .65rem;font-size:.85rem;
     display:flex;flex-direction:column;gap:.4rem;min-width:180px;backdrop-filter:blur(6px)}
+  /* the display:flex above would otherwise defeat the `hidden` attribute */
+  #panel[hidden]{display:none}
   #panel label{display:flex;align-items:center;justify-content:space-between;gap:.5rem;color:var(--muted)}
   #panel input[type=color]{width:32px;height:22px;border:none;background:transparent;padding:0}
   #panel button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
@@ -120,7 +148,7 @@
   <span class="spacer"></span>
   <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -128,7 +156,7 @@
 
 <main>
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, or <code>.3mf</code> file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, <code>.3mf</code>, <code>.svg</code>, or image file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
@@ -140,6 +168,27 @@
     </div>
     <div id="yamlTree" class="y-tree"></div>
   </section>
+  <div id="image">
+    <img id="imgEl" alt="">
+    <div id="imgPanel">
+      <div class="btns">
+        <button id="imgZoomOut" type="button" title="Zoom out">&minus;</button>
+        <button id="imgZoomIn" type="button" title="Zoom in">+</button>
+      </div>
+      <div class="btns">
+        <button id="imgFit" type="button">Fit</button>
+        <button id="imgActual" type="button">100%</button>
+      </div>
+      <label class="row">Background
+        <select id="imgBg">
+          <option value="bg-dark">Dark</option>
+          <option value="bg-check">Checker</option>
+          <option value="bg-light">Light</option>
+        </select>
+      </label>
+    </div>
+    <div id="imgInfo"></div>
+  </div>
   <div id="three"></div>
   <div id="panel" hidden>
     <label>Color <input id="colorPick" type="color" value="#8fb8e6"></label>
