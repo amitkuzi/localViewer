@@ -17,6 +17,8 @@ describe('detectKind', () => {
   it('recognises 3d formats', () => {
     expect(detectKind('part.stl')).toBe('stl');
     expect(detectKind('Part.3MF')).toBe('3mf');
+    expect(detectKind('part.step')).toBe('step');
+    expect(detectKind('Part.STP')).toBe('step');
   });
   it('recognises image formats', () => {
     expect(detectKind('photo.png')).toBe('image');

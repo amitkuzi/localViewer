@@ -324,6 +324,55 @@ async function load3MF(buffer) {
   show('3d'); fitView();
 }
 
+// ---- STEP (via occt-import-js: WASM OpenCascade, tessellates B-rep to meshes) ----
+// Loaded as a classic script in index.html, which defines the global factory
+// `occtimportjs`. Instantiating the WASM module is expensive, so it's done
+// once, lazily, on first use rather than at page load.
+let occtPromise = null;
+function ensureOcct() {
+  if (!occtPromise) {
+    if (typeof window.occtimportjs !== 'function') {
+      return Promise.reject(new Error('STEP importer failed to load (occt-import-js script missing).'));
+    }
+    occtPromise = window.occtimportjs();
+  }
+  return occtPromise;
+}
+
+async function loadSTEP(buffer) {
+  ensureThree();
+  clearModel();
+  try {
+    const occt = await ensureOcct();
+    const result = occt.ReadStepFile(new Uint8Array(buffer), null);
+    if (!result.success || !result.meshes.length) {
+      return showError('Could not parse this STEP file (unsupported or corrupt).');
+    }
+    const group = new THREE.Group();
+    for (const mesh of result.meshes) {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(mesh.attributes.position.array, 3));
+      if (mesh.attributes.normal) {
+        geom.setAttribute('normal', new THREE.Float32BufferAttribute(mesh.attributes.normal.array, 3));
+      } else {
+        geom.computeVertexNormals();
+      }
+      geom.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.index.array), 1));
+      const mat = new THREE.MeshStandardMaterial({ metalness: 0.05, roughness: 0.75 });
+      group.add(new THREE.Mesh(geom, mat));
+    }
+    // STEP (like 3MF) is Z-up by convention in CAD tools; convert to Y-up.
+    group.rotation.x = -Math.PI / 2;
+    scene.add(group);
+    currentMesh = group;
+    applyColor($('colorPick').value);
+    show('3d'); fitView();
+  } catch (e) {
+    console.error(e);
+    showError('Failed to load STEP file.\n\n' + (e.message || e));
+  }
+}
+
 // ---- tabs: render the active document, redraw the tab strip ----
 function renderActive() {
   const tab = store.active;
@@ -340,6 +389,7 @@ function renderActive() {
   else if (tab.kind === 'image') renderImage(tab.payload.url);
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
+  else if (tab.kind === 'step') loadSTEP(tab.payload.buffer);
 }
 
 // Free the blob URL backing an image tab so closing/refreshing it doesn't leak.
@@ -363,7 +413,7 @@ async function loadFromBlob(name, blob, source) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf, .svg, images`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf, .step, .stp, .svg, images`);
   }
   try {
     let payload;

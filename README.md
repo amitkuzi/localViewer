@@ -1,6 +1,6 @@
 # localViewer
 
-A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
+A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
@@ -16,6 +16,9 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
   Deep or large blocks start collapsed; **Expand all** / **Collapse all** toggle everything.
 - **Image viewer** — SVG and raster images with pan (drag), zoom (wheel or **+**/**−**),
   **Fit** / **100%**, and a dark / checker / light background toggle to inspect transparency.
+- **STEP viewer** — `.step`/`.stp` CAD files are tessellated client-side (via
+  [occt-import-js](https://github.com/kovacsv/occt-import-js), a WASM build of OpenCascade) and
+  shown in the same 3D viewer as STL/3MF, with color/wireframe/grid controls and fit-to-view.
 
 ## Try it
 
@@ -33,6 +36,7 @@ Open it, drop a file in, or pass `?src=https://…/your.stl` to auto-load.
 - **Android / Edge or Chrome**: open the URL → menu → **Add to Home screen**.
 
 The PWA caches everything (app shell + three.js + marked) on first load, so subsequent launches work offline.
+The STEP importer (`occt-import-js`, ~7 MB WASM) is fetched lazily on first use rather than at page load, and is cached from then on.
 
 ## File Explorer integration on Windows
 
@@ -50,7 +54,7 @@ cd <path to viewer>\tools
 .\register-windows.ps1
 ```
 
-This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`.
+This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`, `.step`, `.stp`.
 
 ### Use
 In File Explorer: right-click a supported file → **Open with → localViewer**.
@@ -67,7 +71,7 @@ To make it the default for that extension: **Open with → Choose another app �
 | File | Purpose |
 |---|---|
 | `index.html` | UI shell + import map + PWA hooks |
-| `app.js` | Orchestration: tabs, loaders (STL/3MF via three.js, MD via marked, YAML via js-yaml) |
+| `app.js` | Orchestration: tabs, loaders (STL/3MF via three.js, STEP via occt-import-js, MD via marked, YAML via js-yaml) |
 | `src/format.js` | Pure helpers: file-kind detection, path/title parsing |
 | `src/header.js` | Header file-info rendering (name / path / Open folder) |
 | `src/tabs.js` | `TabStore` — open/activate/close document tabs |

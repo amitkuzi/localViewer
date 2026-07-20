@@ -1,7 +1,7 @@
 {
   "name": "localviewer",
   "version": "1.0.0",
-  "description": "Local viewer for Markdown, YAML, STL and 3MF files.",
+  "description": "Local viewer for Markdown, YAML, STL, 3MF and STEP files.",
   "type": "module",
   "private": true,
   "scripts": {

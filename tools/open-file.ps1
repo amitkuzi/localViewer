@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Launches localViewer in Edge for a single .md/.stl/.3mf file.
+    Launches localViewer in Edge for a single .md/.stl/.3mf/.step/.stp file.
 
 .DESCRIPTION
     Starts a tiny loopback HTTP server (TcpListener) that serves:
@@ -89,6 +89,8 @@ $mime = @{
     '.txt'         = 'text/plain; charset=utf-8'
     '.stl'         = 'application/sla'
     '.3mf'         = 'model/3mf'
+    '.step'        = 'model/step'
+    '.stp'         = 'model/step'
 }
 
 function Send-Response {

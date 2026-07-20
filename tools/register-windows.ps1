@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Registers .md / .stl / .3mf to open with localViewer via "Open with > localViewer".
+    Registers .md / .stl / .3mf / .step / .stp to open with localViewer via "Open with > localViewer".
 
 .DESCRIPTION
     Writes per-user HKCU classes (no admin required). Adds:
@@ -51,14 +51,14 @@ Set-ItemProperty -Path $appKey    -Name 'FriendlyAppName' -Value 'localViewer'
 # SupportedTypes — extensions Explorer will offer this app for
 $supportedTypes = "$appKey\SupportedTypes"
 New-Item -Path $supportedTypes -Force | Out-Null
-foreach ($ext in @('.md', '.stl', '.3mf')) {
+foreach ($ext in @('.md', '.stl', '.3mf', '.step', '.stp')) {
     Set-ItemProperty -Path $supportedTypes -Name $ext -Value ''
 }
 
 # ---- add to OpenWithList for each extension, in BOTH locations ----
 # Location 1: HKCU\Software\Classes\<.ext>\OpenWithList\<app> (key form)
 # Location 2: HKCU\...\Explorer\FileExts\<.ext>\OpenWithList (value form, what Explorer actually reads)
-foreach ($ext in @('.md', '.stl', '.3mf')) {
+foreach ($ext in @('.md', '.stl', '.3mf', '.step', '.stp')) {
 
     # Classes form
     $classesList = "HKCU:\Software\Classes\$ext\OpenWithList\localViewer.cmd"
@@ -104,7 +104,7 @@ foreach ($ext in @('.md', '.stl', '.3mf')) {
 
 # ---- restart Explorer so it re-reads the menu ----
 Write-Host ""
-Write-Host "Registered localViewer for: .md  .stl  .3mf" -ForegroundColor Green
+Write-Host "Registered localViewer for: .md  .stl  .3mf  .step  .stp" -ForegroundColor Green
 Write-Host ""
 
 $ans = Read-Host "Restart Explorer now so the menu refreshes? [Y/n]"
@@ -120,7 +120,7 @@ if ($ans -eq '' -or $ans -match '^[Yy]') {
 }
 
 Write-Host ""
-Write-Host "Use:    Right-click .md/.stl/.3mf file -> Open with -> localViewer"
+Write-Host "Use:    Right-click .md/.stl/.3mf/.step/.stp file -> Open with -> localViewer"
 Write-Host "        (If still missing: Open with -> Choose another app -> More apps ->"
 Write-Host "         scroll down -> Look for another app on this PC ->"
 Write-Host "         pick $wrapperCmd)"

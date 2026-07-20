@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101418">
-<title>localViewer — MD / YAML / STL / 3MF / images</title>
+<title>localViewer — MD / YAML / STL / 3MF / STEP / images</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
@@ -148,7 +148,7 @@
   <span class="spacer"></span>
   <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf,.step,.stp,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -156,7 +156,7 @@
 
 <main>
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, <code>.3mf</code>, <code>.svg</code>, or image file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.svg</code>, or image file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
@@ -200,6 +200,9 @@
   <div id="err"></div>
 </main>
 
+<!-- Classic (non-module) script: exposes the global `occtimportjs` factory used
+     to lazily instantiate the OpenCascade WASM build for STEP import. -->
+<script src="https://cdn.jsdelivr.net/npm/occt-import-js@0.0.23/dist/occt-import-js.js"></script>
 <script type="module" src="app.js"></script>
 <div id="toast" style="position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);
   background:#16321f;color:#cfeede;border:1px solid #2e6b45;border-radius:10px;

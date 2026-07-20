@@ -14,7 +14,7 @@ if (Test-Path -LiteralPath $appKey) {
     Write-Host "Removed $appKey"
 }
 
-foreach ($ext in @('.md', '.stl', '.3mf')) {
+foreach ($ext in @('.md', '.stl', '.3mf', '.step', '.stp')) {
     # 2) Remove from HKCU\Software\Classes\<.ext>\OpenWithList
     $classesList = "HKCU:\Software\Classes\$ext\OpenWithList\localViewer.cmd"
     if (Test-Path -LiteralPath $classesList) {
@@ -60,4 +60,4 @@ if ($ans -eq '' -or $ans -match '^[Yy]') {
 }
 
 Write-Host ""
-Write-Host "Unregistered localViewer from .md / .stl / .3mf." -ForegroundColor Yellow
+Write-Host "Unregistered localViewer from .md / .stl / .3mf / .step / .stp." -ForegroundColor Yellow
