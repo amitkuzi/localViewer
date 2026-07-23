@@ -1,6 +1,6 @@
 # localViewer
 
-A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
+A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
@@ -14,6 +14,13 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
   click a tab to switch, click × to close. Re-opening the same file re-uses its tab.
 - **YAML viewer** — `.yaml`/`.yml` render as a foldable tree with collapsible sections.
   Deep or large blocks start collapsed; **Expand all** / **Collapse all** toggle everything.
+- **CSV viewer** — `.csv` renders as a scrollable table with a sticky header row.
+  The delimiter (comma, semicolon, or tab) is auto-detected, and **First row is header**
+  toggles whether the first row renders as column headers or as data.
+- **Markdown RTL/LTR** — each rendered block (paragraph, heading, list item, table cell)
+  automatically aligns right-to-left or left-to-right based on its own content, so Hebrew/
+  Arabic and English text render correctly even mixed in the same document. Code blocks
+  always stay left-to-right.
 - **Image viewer** — SVG and raster images with pan (drag), zoom (wheel or **+**/**−**),
   **Fit** / **100%**, and a dark / checker / light background toggle to inspect transparency.
 - **STEP viewer** — `.step`/`.stp` CAD files are tessellated client-side (via
@@ -71,12 +78,14 @@ To make it the default for that extension: **Open with → Choose another app �
 | File | Purpose |
 |---|---|
 | `index.html` | UI shell + import map + PWA hooks |
-| `app.js` | Orchestration: tabs, loaders (STL/3MF via three.js, STEP via occt-import-js, MD via marked, YAML via js-yaml) |
+| `app.js` | Orchestration: tabs, loaders (STL/3MF via three.js, STEP via occt-import-js, MD via marked, YAML via js-yaml, CSV via csvview) |
 | `src/format.js` | Pure helpers: file-kind detection, path/title parsing |
 | `src/header.js` | Header file-info rendering (name / path / Open folder) |
 | `src/tabs.js` | `TabStore` — open/activate/close document tabs |
 | `src/tabbar.js` | Tab strip DOM rendering |
 | `src/yamlview.js` | YAML → collapsible tree renderer |
+| `src/csvview.js` | CSV → delimiter detection, parsing, table renderer |
+| `src/mdview.js` | Per-block RTL/LTR direction for rendered markdown |
 | `test/` | Vitest unit + jsdom integration tests (`npm test`) |
 | `sw.js` | Service worker — caches shell + CDN deps for offline |
 | `manifest.webmanifest` | PWA manifest |
@@ -84,6 +93,7 @@ To make it the default for that extension: **Open with → Choose another app �
 | `tools/open-file.ps1` | Loopback HTTP server + Edge launcher |
 | `tools/register-windows.ps1` | HKCU file association installer |
 | `tools/unregister-windows.ps1` | Reverses the above |
+| `tools/dev-server.mjs` | Zero-dependency static server for local dev (`npm start` / VS Code F5) |
 
 ## Enabling GitHub Pages
 
@@ -104,6 +114,17 @@ integration tests for the DOM-rendering pieces:
 npm install
 npm test
 ```
+
+To run the viewer locally instead of relying on the Windows helper or GitHub Pages:
+
+```bash
+npm start
+```
+
+serves the repo on `http://localhost:8080/`. In VS Code, press **F5** (or Run and Debug →
+**Launch Edge against localhost**) — it starts the dev server automatically via
+`.vscode/tasks.json` and opens Edge with the debugger attached, so breakpoints in `app.js`
+and the `src/` modules work directly.
 
 ## Roadmap
 

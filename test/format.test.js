@@ -14,6 +14,10 @@ describe('detectKind', () => {
     expect(detectKind('config.yaml')).toBe('yaml');
     expect(detectKind('config.YML')).toBe('yaml');
   });
+  it('recognises csv', () => {
+    expect(detectKind('data.csv')).toBe('csv');
+    expect(detectKind('Data.CSV')).toBe('csv');
+  });
   it('recognises 3d formats', () => {
     expect(detectKind('part.stl')).toBe('stl');
     expect(detectKind('Part.3MF')).toBe('3mf');

@@ -11,6 +11,7 @@ export function detectKind(name) {
   const n = String(name || '').toLowerCase();
   if (n.endsWith('.md') || n.endsWith('.markdown') || n.endsWith('.txt')) return 'md';
   if (n.endsWith('.yaml') || n.endsWith('.yml')) return 'yaml';
+  if (n.endsWith('.csv')) return 'csv';
   if (n.endsWith('.stl')) return 'stl';
   if (n.endsWith('.3mf')) return '3mf';
   if (n.endsWith('.step') || n.endsWith('.stp')) return 'step';
@@ -45,7 +46,7 @@ export function hasResolvablePath(path) {
 
 // Window/tab title for the currently shown file.
 export function titleFor(name) {
-  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / STL / 3MF / STEP / images`;
+  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / images`;
 }
 
 // Build the metadata shown in the header for an opened file.

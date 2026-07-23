@@ -10,6 +10,8 @@ import { renderFileMeta } from './src/header.js';
 import { TabStore } from './src/tabs.js';
 import { renderTabBar } from './src/tabbar.js';
 import { renderYamlValue, setAllOpen } from './src/yamlview.js';
+import { detectDelimiter, parseCSV, renderCsvTable, columnCount } from './src/csvview.js';
+import { applyTextDirection } from './src/mdview.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
@@ -18,6 +20,7 @@ const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
       fileInfo = $('fileInfo'), fileName = $('fileName'), filePath = $('filePath'),
       openFolderBtn = $('openFolderBtn'), tabbar = $('tabbar'),
       yamlEl = $('yaml'), yamlTree = $('yamlTree'),
+      csvEl = $('csv'), csvTable = $('csvTable'), csvInfo = $('csvInfo'), csvHeaderToggle = $('csvHeaderToggle'),
       imageEl = $('image'), imgEl = $('imgEl'), imgInfo = $('imgInfo');
 
 // The folder of the file currently shown, for "Open folder".
@@ -33,6 +36,7 @@ function show(view) {
   drop.style.display    = view === 'drop'  ? 'flex' : 'none';
   mdEl.style.display    = view === 'md'    ? 'block': 'none';
   yamlEl.style.display  = view === 'yaml'  ? 'flex' : 'none';
+  csvEl.style.display   = view === 'csv'   ? 'flex' : 'none';
   imageEl.style.display = view === 'image' ? 'flex' : 'none';
   threeEl.style.display = view === '3d'    ? 'block': 'none';
   panel.hidden          = view !== '3d';
@@ -54,6 +58,23 @@ function renderYamlDoc(text) {
 }
 $('yExpand').addEventListener('click', () => setAllOpen(yamlTree, true));
 $('yCollapse').addEventListener('click', () => setAllOpen(yamlTree, false));
+
+// ---- CSV ----
+let csvRows = []; // parsed rows of the currently active CSV tab
+
+function renderCsvView() {
+  renderCsvTable(csvTable, csvRows, { headerRow: csvHeaderToggle.checked });
+  const cols = columnCount(csvRows);
+  const dataRows = csvHeaderToggle.checked ? Math.max(csvRows.length - 1, 0) : csvRows.length;
+  csvInfo.textContent = `${dataRows} rows × ${cols} cols`;
+}
+csvHeaderToggle.addEventListener('change', renderCsvView);
+
+function renderCsvDoc(text) {
+  csvRows = parseCSV(text, detectDelimiter(text));
+  renderCsvView();
+  show('csv');
+}
 
 // ---- header: file name / path + "open folder" ----
 function setActiveFileMeta(meta) {
@@ -99,6 +120,7 @@ function renderMarkdown(text) {
   marked.setOptions({ gfm: true, breaks: false });
   const html = DOMPurify.sanitize(marked.parse(text));
   mdEl.innerHTML = html;
+  applyTextDirection(mdEl);
   show('md');
 }
 
@@ -386,6 +408,7 @@ function renderActive() {
   setActiveFileMeta(tab.meta);
   if (tab.kind === 'md') renderMarkdown(tab.payload.text);
   else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
+  else if (tab.kind === 'csv') renderCsvDoc(tab.payload.text);
   else if (tab.kind === 'image') renderImage(tab.payload.url);
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
@@ -413,11 +436,11 @@ async function loadFromBlob(name, blob, source) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .stl, .3mf, .step, .stp, .svg, images`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .svg, images`);
   }
   try {
     let payload;
-    if (meta.kind === 'md' || meta.kind === 'yaml') payload = { text: await blob.text() };
+    if (meta.kind === 'md' || meta.kind === 'yaml' || meta.kind === 'csv') payload = { text: await blob.text() };
     else if (meta.kind === 'image') payload = { url: URL.createObjectURL(blob) };
     else payload = { buffer: await blob.arrayBuffer() };
     // Re-opening the same source replaces the tab's payload; free the old

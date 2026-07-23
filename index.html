@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101418">
-<title>localViewer — MD / YAML / STL / 3MF / STEP / images</title>
+<title>localViewer — MD / YAML / CSV / STL / 3MF / STEP / images</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 
@@ -76,6 +76,17 @@
   #yaml .y-toolbar button:hover{border-color:var(--accent)}
   #yaml .y-tree{padding:1rem 1.25rem;overflow:auto;max-width:980px;margin:0 auto;width:100%;
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86rem;line-height:1.7}
+  .y-toolbar .spacer{flex:1}
+  .y-toolbar label{display:flex;align-items:center;gap:.35rem;color:var(--muted);cursor:pointer}
+  .y-toolbar .info{color:var(--muted);font-size:.8rem}
+  #csv{display:none;flex-direction:column;height:100%;overflow:hidden}
+  .csv-scroll{flex:1;overflow:auto}
+  table.csv-table{border-collapse:collapse;width:max-content;min-width:100%;font-size:.86rem;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  table.csv-table th,table.csv-table td{border:1px solid var(--line);padding:.3rem .6rem;
+    white-space:pre;text-align:left}
+  table.csv-table thead th{position:sticky;top:0;background:var(--panel);z-index:1}
+  table.csv-table tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
   .y-children{margin-left:1.1rem;border-left:1px solid var(--line);padding-left:.8rem}
   .y-row{padding:.05rem 0}
   details.y-node>summary{cursor:pointer;list-style:none;user-select:none;padding:.05rem 0}
@@ -148,7 +159,7 @@
   <span class="spacer"></span>
   <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.stl,.3mf,.step,.stp,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -156,7 +167,7 @@
 
 <main>
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.svg</code>, or image file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.csv</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.svg</code>, or image file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
@@ -167,6 +178,14 @@
       <button id="yCollapse" type="button">Collapse all</button>
     </div>
     <div id="yamlTree" class="y-tree"></div>
+  </section>
+  <section id="csv">
+    <div class="y-toolbar">
+      <label><input id="csvHeaderToggle" type="checkbox" checked> First row is header</label>
+      <span class="spacer"></span>
+      <span id="csvInfo" class="info"></span>
+    </div>
+    <div id="csvTable" class="csv-scroll"></div>
   </section>
   <div id="image">
     <img id="imgEl" alt="">

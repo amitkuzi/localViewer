@@ -1,5 +1,5 @@
 // localViewer service worker — cache app shell + CDN libs after first load.
-const CACHE = 'localviewer-v7';
+const CACHE = 'localviewer-v8';
 const SHELL = [
   './',
   './index.html',
@@ -9,6 +9,8 @@ const SHELL = [
   './src/tabs.js',
   './src/tabbar.js',
   './src/yamlview.js',
+  './src/csvview.js',
+  './src/mdview.js',
   './manifest.webmanifest',
   './icons/icon.svg'
 ];
