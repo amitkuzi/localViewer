@@ -29,7 +29,8 @@ const MIME = {
   '.stl': 'application/sla',
   '.3mf': 'model/3mf',
   '.step': 'model/step',
-  '.stp': 'model/step'
+  '.stp': 'model/step',
+  '.scad': 'application/x-openscad'
 };
 
 const rootWithSep = root.endsWith('\\') || root.endsWith('/') ? root : root + '\\';

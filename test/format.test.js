@@ -23,6 +23,7 @@ describe('detectKind', () => {
     expect(detectKind('Part.3MF')).toBe('3mf');
     expect(detectKind('part.step')).toBe('step');
     expect(detectKind('Part.STP')).toBe('step');
+    expect(detectKind('Bracket.SCAD')).toBe('scad');
   });
   it('recognises image formats', () => {
     expect(detectKind('photo.png')).toBe('image');

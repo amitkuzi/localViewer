@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Launches localViewer in Edge for a single .md/.stl/.3mf/.step/.stp file.
+    Launches localViewer in Edge for a single .md/.stl/.3mf/.step/.stp/.scad file.
 
 .DESCRIPTION
     Starts a tiny loopback HTTP server (TcpListener) that serves:
@@ -91,6 +91,7 @@ $mime = @{
     '.3mf'         = 'model/3mf'
     '.step'        = 'model/step'
     '.stp'         = 'model/step'
+    '.scad'        = 'application/x-openscad'
 }
 
 function Send-Response {

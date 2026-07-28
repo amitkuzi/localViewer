@@ -315,10 +315,13 @@ function fitView() {
     `bbox  min(${box.min.x.toFixed(1)}, ${box.min.y.toFixed(1)}, ${box.min.z.toFixed(1)})`;
 }
 
-async function loadSTL(buffer) {
+// `data` is an ArrayBuffer (binary STL) or a string (ASCII STL, e.g. what the
+// OpenSCAD compiler hands us). `zUp` rotates Z-up sources into the Y-up scene.
+async function loadSTL(data, zUp = false) {
   ensureThree();
   clearModel();
-  const geom = new STLLoader().parse(buffer);
+  const geom = new STLLoader().parse(data);
+  if (zUp) geom.rotateX(-Math.PI / 2);
   geom.computeVertexNormals();
   geom.computeBoundingBox();
   // center XZ, sit on Y=min
@@ -395,6 +398,36 @@ async function loadSTEP(buffer) {
   }
 }
 
+// ---- OpenSCAD (.scad, compiled in the browser by openscad-wasm) ----
+// The engine is ~14 MB, so it's imported lazily on first use — same deal as the
+// STEP importer above. It compiles the source to ASCII STL, which the STL path
+// already knows how to draw.
+// ponytail: no include<>/use<> resolution — the WASM filesystem only holds the
+// one file we write. Mount the sibling files if multi-file projects show up.
+let scadPromise = null;
+let scadLog = [];
+function ensureScad() {
+  if (!scadPromise) {
+    scadPromise = import('openscad-wasm')
+      .then(m => m.createOpenSCAD({ printErr: (t) => scadLog.push(t) }));
+  }
+  return scadPromise;
+}
+
+async function loadSCAD(text) {
+  showToast('Compiling OpenSCAD… the first run downloads the ~14 MB engine.', 20000);
+  try {
+    const scad = await ensureScad();
+    scadLog = [];
+    const stl = await scad.renderToStl(text);
+    await loadSTL(stl, true); // OpenSCAD is Z-up
+  } catch (e) {
+    console.error(e);
+    showError('OpenSCAD could not compile this file.\n\n'
+      + (scadLog.join('\n') || e.message || e));
+  }
+}
+
 // ---- tabs: render the active document, redraw the tab strip ----
 function renderActive() {
   const tab = store.active;
@@ -413,6 +446,7 @@ function renderActive() {
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
   else if (tab.kind === 'step') loadSTEP(tab.payload.buffer);
+  else if (tab.kind === 'scad') loadSCAD(tab.payload.text);
 }
 
 // Free the blob URL backing an image tab so closing/refreshing it doesn't leak.
@@ -436,11 +470,11 @@ async function loadFromBlob(name, blob, source) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .svg, images`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .svg, images`);
   }
   try {
     let payload;
-    if (meta.kind === 'md' || meta.kind === 'yaml' || meta.kind === 'csv') payload = { text: await blob.text() };
+    if (['md', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
     else if (meta.kind === 'image') payload = { url: URL.createObjectURL(blob) };
     else payload = { buffer: await blob.arrayBuffer() };
     // Re-opening the same source replaces the tab's payload; free the old

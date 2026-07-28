@@ -1,6 +1,6 @@
 # localViewer
 
-A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
+A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, **OpenSCAD (`.scad`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
@@ -26,6 +26,9 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
 - **STEP viewer** — `.step`/`.stp` CAD files are tessellated client-side (via
   [occt-import-js](https://github.com/kovacsv/occt-import-js), a WASM build of OpenCascade) and
   shown in the same 3D viewer as STL/3MF, with color/wireframe/grid controls and fit-to-view.
+- **OpenSCAD viewer** — `.scad` files are compiled in the browser by
+  [openscad-wasm](https://www.npmjs.com/package/openscad-wasm) and shown in the same 3D viewer.
+  `include <>` / `use <>` of other files is not resolved — only the opened file is compiled.
 
 ## Try it
 
@@ -43,7 +46,7 @@ Open it, drop a file in, or pass `?src=https://…/your.stl` to auto-load.
 - **Android / Edge or Chrome**: open the URL → menu → **Add to Home screen**.
 
 The PWA caches everything (app shell + three.js + marked) on first load, so subsequent launches work offline.
-The STEP importer (`occt-import-js`, ~7 MB WASM) is fetched lazily on first use rather than at page load, and is cached from then on.
+The STEP importer (`occt-import-js`, ~7 MB WASM) and the OpenSCAD compiler (`openscad-wasm`, ~14 MB) are fetched lazily on first use rather than at page load, and are cached from then on.
 
 ## File Explorer integration on Windows
 
@@ -61,7 +64,7 @@ cd <path to viewer>\tools
 .\register-windows.ps1
 ```
 
-This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`, `.step`, `.stp`.
+This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`, `.step`, `.stp`, `.scad`.
 
 ### Use
 In File Explorer: right-click a supported file → **Open with → localViewer**.

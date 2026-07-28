@@ -15,6 +15,7 @@ export function detectKind(name) {
   if (n.endsWith('.stl')) return 'stl';
   if (n.endsWith('.3mf')) return '3mf';
   if (n.endsWith('.step') || n.endsWith('.stp')) return 'step';
+  if (n.endsWith('.scad')) return 'scad';
   if (IMAGE_EXT.some(ext => n.endsWith(ext))) return 'image';
   return null;
 }
@@ -46,7 +47,7 @@ export function hasResolvablePath(path) {
 
 // Window/tab title for the currently shown file.
 export function titleFor(name) {
-  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / images`;
+  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images`;
 }
 
 // Build the metadata shown in the header for an opened file.
