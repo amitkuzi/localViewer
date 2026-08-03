@@ -26,6 +26,10 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
 - **STEP viewer** — `.step`/`.stp` CAD files are tessellated client-side (via
   [occt-import-js](https://github.com/kovacsv/occt-import-js), a WASM build of OpenCascade) and
   shown in the same 3D viewer as STL/3MF, with color/wireframe/grid controls and fit-to-view.
+- **3MF viewer** — including slicer projects (Bambu Studio, OrcaSlicer, PrusaSlicer) that use
+  the 3MF *production extension* and split objects across `3D/Objects/*.model`. three.js's
+  `ThreeMFLoader` ignores those cross-part `p:path` references, so multi-object / multi-plate
+  files came up empty; `src/threemf.js` resolves them per part instead.
 - **OpenSCAD viewer** — `.scad` files are compiled in the browser by
   [openscad-wasm](https://www.npmjs.com/package/openscad-wasm) and shown in the same 3D viewer.
   `include <>` / `use <>` of other files is not resolved — only the opened file is compiled.
@@ -81,7 +85,7 @@ To make it the default for that extension: **Open with → Choose another app �
 | File | Purpose |
 |---|---|
 | `index.html` | UI shell + import map + PWA hooks |
-| `app.js` | Orchestration: tabs, loaders (STL/3MF via three.js, STEP via occt-import-js, MD via marked, YAML via js-yaml, CSV via csvview) |
+| `app.js` | Orchestration: tabs, loaders (STL via three.js, 3MF via threemf.js, STEP via occt-import-js, MD via marked, YAML via js-yaml, CSV via csvview) |
 | `src/format.js` | Pure helpers: file-kind detection, path/title parsing |
 | `src/header.js` | Header file-info rendering (name / path / Open folder) |
 | `src/tabs.js` | `TabStore` — open/activate/close document tabs |
@@ -89,6 +93,7 @@ To make it the default for that extension: **Open with → Choose another app �
 | `src/yamlview.js` | YAML → collapsible tree renderer |
 | `src/csvview.js` | CSV → delimiter detection, parsing, table renderer |
 | `src/mdview.js` | Per-block RTL/LTR direction for rendered markdown |
+| `src/threemf.js` | 3MF geometry reader with production-extension (`p:path`) support |
 | `test/` | Vitest unit + jsdom integration tests (`npm test`) |
 | `sw.js` | Service worker — caches shell + CDN deps for offline |
 | `manifest.webmanifest` | PWA manifest |

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
-import { ThreeMFLoader } from 'three/addons/loaders/3MFLoader.js';
+import { unzipSync, strFromU8 } from 'fflate';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { load as parseYaml } from 'js-yaml';
@@ -12,6 +12,7 @@ import { renderTabBar } from './src/tabbar.js';
 import { renderYamlValue, setAllOpen } from './src/yamlview.js';
 import { detectDelimiter, parseCSV, renderCsvTable, columnCount } from './src/csvview.js';
 import { applyTextDirection } from './src/mdview.js';
+import { parse3MFParts } from './src/threemf.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
@@ -320,10 +321,14 @@ function fitView() {
 async function loadSTL(data, zUp = false) {
   ensureThree();
   clearModel();
-  const geom = new STLLoader().parse(data);
+  showGeometry(new STLLoader().parse(data), zUp);
+}
+
+// Center a geometry, sit it on the grid and display it. `zUp` rotates Z-up
+// sources (3MF, OpenSCAD) into the Y-up scene.
+function showGeometry(geom, zUp = false) {
   if (zUp) geom.rotateX(-Math.PI / 2);
   geom.computeVertexNormals();
-  geom.computeBoundingBox();
   // center XZ, sit on Y=min
   geom.center();
   const box = new THREE.Box3().setFromBufferAttribute(geom.attributes.position);
@@ -336,17 +341,25 @@ async function loadSTL(data, zUp = false) {
   show('3d'); fitView();
 }
 
+// three's ThreeMFLoader can't follow the production extension's cross-part
+// `p:path` references, which is how every slicer saves multi-object/multi-plate
+// projects — see src/threemf.js.
 async function load3MF(buffer) {
   ensureThree();
   clearModel();
-  const loader = new ThreeMFLoader();
-  const obj = loader.parse(buffer);
-  // 3MF is Z-up by default; convert to Y-up
-  obj.rotation.x = -Math.PI / 2;
-  scene.add(obj);
-  currentMesh = obj;
-  applyColor($('colorPick').value);
-  show('3d'); fitView();
+  try {
+    const zip = unzipSync(new Uint8Array(buffer), { filter: (f) => /\.model$/i.test(f.name) });
+    const parts = {};
+    for (const [name, bytes] of Object.entries(zip)) parts[name] = strFromU8(bytes);
+    const positions = parse3MFParts(parts);
+    if (!positions.length) return showError('No mesh geometry found in this 3MF file.');
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    showGeometry(geom, true); // 3MF is Z-up
+  } catch (e) {
+    console.error(e);
+    showError('Failed to load 3MF file.\n\n' + (e.message || e));
+  }
 }
 
 // ---- STEP (via occt-import-js: WASM OpenCascade, tessellates B-rep to meshes) ----
