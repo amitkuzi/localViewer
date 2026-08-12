@@ -17,10 +17,15 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
 - **CSV viewer** — `.csv` renders as a scrollable table with a sticky header row.
   The delimiter (comma, semicolon, or tab) is auto-detected, and **First row is header**
   toggles whether the first row renders as column headers or as data.
-- **Markdown RTL/LTR** — each rendered block (paragraph, heading, list item, table cell)
-  automatically aligns right-to-left or left-to-right based on its own content, so Hebrew/
-  Arabic and English text render correctly even mixed in the same document. Code blocks
-  always stay left-to-right.
+- **Markdown editing** — **Edit** toggles the rendered view to the raw Markdown source;
+  **Save** writes straight back to the original file (installed-app / File System Access API)
+  or opens a Save-As dialog otherwise. **New MD** creates a blank file. Ctrl/Cmd+S saves
+  while editing; unsaved tabs are marked and confirm before closing.
+- **Markdown RTL/LTR** — by default each rendered block (paragraph, heading, list item, table
+  cell) automatically aligns right-to-left or left-to-right based on its own content, so
+  Hebrew/Arabic and English text render correctly even mixed in the same document. A
+  **Direction** dropdown (Auto/LTR/RTL) lets you override this and force one direction for
+  the whole document, in both preview and edit. Code blocks always stay left-to-right.
 - **Image viewer** — SVG and raster images with pan (drag), zoom (wheel or **+**/**−**),
   **Fit** / **100%**, and a dark / checker / light background toggle to inspect transparency.
 - **STEP viewer** — `.step`/`.stp` CAD files are tessellated client-side (via

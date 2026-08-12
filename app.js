@@ -15,7 +15,10 @@ import { applyTextDirection } from './src/mdview.js';
 import { parse3MFParts } from './src/threemf.js';
 
 const $ = (id) => document.getElementById(id);
-const drop = $('drop'), mdEl = $('md'), threeEl = $('three'),
+const drop = $('drop'), mdWrap = $('mdWrap'), mdEl = $('md'), mdEdit = $('mdEdit'),
+      mdEditToggle = $('mdEditToggle'), mdSaveBtn = $('mdSaveBtn'), mdDirty = $('mdDirty'),
+      mdDirSel = $('mdDir'),
+      newMdBtn = $('newMdBtn'), threeEl = $('three'),
       panel = $('panel'), info = $('info'), err = $('err'),
       kindBadge = $('kindBadge'), picker = $('picker'),
       fileInfo = $('fileInfo'), fileName = $('fileName'), filePath = $('filePath'),
@@ -35,7 +38,7 @@ let renderer, scene, camera, controls, currentMesh, gridHelper;
 // ---- view switching ----
 function show(view) {
   drop.style.display    = view === 'drop'  ? 'flex' : 'none';
-  mdEl.style.display    = view === 'md'    ? 'block': 'none';
+  mdWrap.style.display  = view === 'md'    ? 'flex' : 'none';
   yamlEl.style.display  = view === 'yaml'  ? 'flex' : 'none';
   csvEl.style.display   = view === 'csv'   ? 'flex' : 'none';
   imageEl.style.display = view === 'image' ? 'flex' : 'none';
@@ -116,14 +119,113 @@ function showToast(msg, ms) {
   console.log(msg);
 }
 
-// ---- Markdown ----
-function renderMarkdown(text) {
+// ---- Markdown: rendered preview + raw-source edit toggle ----
+function renderMarkdown(text, dir) {
   marked.setOptions({ gfm: true, breaks: false });
   const html = DOMPurify.sanitize(marked.parse(text));
   mdEl.innerHTML = html;
-  applyTextDirection(mdEl);
+  applyTextDirection(mdEl, dir);
+}
+
+function renderMdTab(tab) {
+  tab.dir = tab.dir || 'auto';
+  mdSaveBtn.disabled = false;
+  mdDirty.textContent = tab.dirty ? 'unsaved changes' : '';
+  mdDirSel.value = tab.dir;
+  if (tab.editing) {
+    if (document.activeElement !== mdEdit) mdEdit.value = tab.payload.text;
+    mdEdit.dir = tab.dir;
+    mdEdit.style.display = 'block';
+    mdEl.style.display = 'none';
+    mdEditToggle.textContent = 'Preview';
+  } else {
+    mdEdit.style.display = 'none';
+    mdEl.style.display = 'block';
+    renderMarkdown(tab.payload.text, tab.dir);
+    mdEditToggle.textContent = 'Edit';
+  }
   show('md');
 }
+
+mdDirSel.addEventListener('change', () => {
+  const tab = store.active;
+  if (!tab || tab.kind !== 'md') return;
+  tab.dir = mdDirSel.value;
+  renderMdTab(tab);
+});
+
+mdEditToggle.addEventListener('click', () => {
+  const tab = store.active;
+  if (!tab || tab.kind !== 'md') return;
+  tab.editing = !tab.editing;
+  renderMdTab(tab);
+  if (tab.editing) mdEdit.focus();
+});
+
+mdEdit.addEventListener('input', () => {
+  const tab = store.active;
+  if (!tab || tab.kind !== 'md') return;
+  tab.payload.text = mdEdit.value;
+  tab.dirty = true;
+  mdDirty.textContent = 'unsaved changes';
+  renderTabBar(tabbar, store, tabBarHandlers);
+});
+
+mdEdit.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveActiveMd(); }
+});
+
+async function saveActiveMd() {
+  const tab = store.active;
+  if (!tab || tab.kind !== 'md') return;
+  try {
+    let handle = tab.payload.handle;
+    if (!handle) {
+      if (!window.showSaveFilePicker) return downloadMd(tab);
+      handle = await window.showSaveFilePicker({
+        suggestedName: tab.name || 'untitled.md',
+        types: [{ description: 'Markdown', accept: { 'text/markdown': ['.md'] } }]
+      });
+      tab.payload.handle = handle;
+      tab.name = handle.name;
+    }
+    const writable = await handle.createWritable();
+    await writable.write(tab.payload.text);
+    await writable.close();
+    tab.dirty = false;
+    mdDirty.textContent = '';
+    renderTabBar(tabbar, store, tabBarHandlers);
+    showToast('Saved ' + tab.name);
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Save failed: ' + (e.message || e));
+  }
+}
+mdSaveBtn.addEventListener('click', saveActiveMd);
+
+// Browsers without the File System Access API (no showSaveFilePicker) fall
+// back to a plain download — the user re-saves it over the original by hand.
+function downloadMd(tab) {
+  const blob = new Blob([tab.payload.text], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = tab.name || 'untitled.md';
+  a.click();
+  URL.revokeObjectURL(url);
+  tab.dirty = false;
+  mdDirty.textContent = '';
+  renderTabBar(tabbar, store, tabBarHandlers);
+}
+
+let untitledSeq = 0;
+function newMdFile() {
+  const name = 'untitled.md';
+  const source = `untitled-${++untitledSeq}`;
+  store.open({
+    name, source, kind: 'md', meta: fileMeta(name, source),
+    payload: { text: '', handle: null }, editing: true
+  });
+}
+newMdBtn.addEventListener('click', newMdFile);
 
 // ---- Images (SVG + raster) ----
 // A lightweight pan/zoom viewer: the <img> is transformed with scale+translate;
@@ -452,7 +554,7 @@ function renderActive() {
   }
   kindBadge.textContent = tab.kind.toUpperCase();
   setActiveFileMeta(tab.meta);
-  if (tab.kind === 'md') renderMarkdown(tab.payload.text);
+  if (tab.kind === 'md') renderMdTab(tab);
   else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
   else if (tab.kind === 'csv') renderCsvDoc(tab.payload.text);
   else if (tab.kind === 'image') renderImage(tab.payload.url);
@@ -468,18 +570,25 @@ function revokeTabURL(id) {
   if (tab?.kind === 'image' && tab.payload?.url) URL.revokeObjectURL(tab.payload.url);
 }
 
+const tabBarHandlers = {
+  onActivate: (id) => store.activate(id),
+  onClose: (id) => {
+    const tab = store.tabs.find(t => t.id === id);
+    if (tab?.dirty && !confirm(`Discard unsaved changes to "${tab.name}"?`)) return;
+    revokeTabURL(id);
+    store.close(id);
+  }
+};
+
 store.subscribe(() => {
-  renderTabBar(tabbar, store, {
-    onActivate: (id) => store.activate(id),
-    onClose:    (id) => { revokeTabURL(id); store.close(id); }
-  });
+  renderTabBar(tabbar, store, tabBarHandlers);
   renderActive();
 });
 
 // ---- entrypoint ----
 // `source` is the most informative locator we have (full URL, ?path=, or just
 // the file name) and drives the header path display + "Open folder".
-async function loadFromBlob(name, blob, source) {
+async function loadFromBlob(name, blob, source, handle) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
@@ -490,6 +599,9 @@ async function loadFromBlob(name, blob, source) {
     if (['md', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
     else if (meta.kind === 'image') payload = { url: URL.createObjectURL(blob) };
     else payload = { buffer: await blob.arrayBuffer() };
+    // A FileSystemFileHandle (only available when launched via the OS file
+    // handler) lets the md editor write straight back to disk on Save.
+    if (handle && meta.kind === 'md') payload.handle = handle;
     // Re-opening the same source replaces the tab's payload; free the old
     // object URL first so we don't leak blobs.
     const prior = store.tabs.find(t => t.source === meta.source);
@@ -540,7 +652,7 @@ if ('launchQueue' in window && 'LaunchParams' in window) {
     try {
       for (const handle of launchParams.files) {
         const file = await handle.getFile();
-        await loadFromBlob(file.name, file);
+        await loadFromBlob(file.name, file, undefined, handle);
       }
     } catch (e) {
       console.error(e);

@@ -5,11 +5,19 @@
 // double as markers for the VS Code background-task problem matcher.
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = normalize(join(fileURLToPath(import.meta.url), '..', '..'));
 const port = Number(process.argv[2] || process.env.PORT || 8080);
+
+try {
+  const out = execFileSync('git', ['pull', '--ff-only'], { cwd: root, timeout: 10000, encoding: 'utf8' });
+  console.log(out.trim());
+} catch (err) {
+  console.warn(`Auto-update skipped: ${err.message.split('\n')[0]}`);
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',

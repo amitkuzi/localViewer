@@ -63,19 +63,26 @@
   #drop.over{background:rgba(108,182,255,.08);outline:2px dashed var(--accent);outline-offset:-12px}
   #drop .big{font-size:1.1rem;color:var(--text)}
   #drop code{background:#0b0e12;border:1px solid var(--line);padding:.1rem .35rem;border-radius:6px}
-  #md{display:none;padding:2rem;max-width:880px;margin:0 auto;line-height:1.6;overflow:auto;height:100%}
+  #mdWrap{display:none;flex-direction:column;height:100%;overflow:hidden}
+  #md{padding:2rem;max-width:880px;margin:0 auto;width:100%;line-height:1.6;overflow:auto;flex:1}
   #md h1,#md h2,#md h3{border-bottom:1px solid var(--line);padding-bottom:.25rem}
   #md code{background:#0b0e12;padding:.1rem .35rem;border-radius:4px}
   #md pre{background:#0b0e12;border:1px solid var(--line);padding:.75rem;border-radius:8px;overflow:auto}
   #md table{border-collapse:collapse}
   #md th,#md td{border:1px solid var(--line);padding:.3rem .55rem}
   #md a{color:var(--accent)}
+  #mdEdit{display:none;flex:1;width:100%;resize:none;border:none;outline:none;padding:1.25rem 2rem;
+    background:#0b0e12;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:.9rem;line-height:1.6}
   #yaml{display:none;flex-direction:column;height:100%;overflow:hidden}
-  #yaml .y-toolbar{display:flex;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--line);
+  .y-toolbar{display:flex;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--line);
     background:var(--panel)}
-  #yaml .y-toolbar button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+  .y-toolbar button{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
     border-radius:6px;padding:.25rem .6rem;cursor:pointer}
-  #yaml .y-toolbar button:hover{border-color:var(--accent)}
+  .y-toolbar button:hover{border-color:var(--accent)}
+  .y-toolbar button:disabled{opacity:.5;cursor:default}
+  .y-toolbar select{font:inherit;color:var(--text);background:#0b0e12;border:1px solid var(--line);
+    border-radius:6px;padding:.2rem .4rem}
   #yaml .y-tree{padding:1rem 1.25rem;overflow:auto;max-width:980px;margin:0 auto;width:100%;
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86rem;line-height:1.7}
   .y-toolbar .spacer{flex:1}
@@ -160,6 +167,7 @@
   </span>
   <span class="spacer"></span>
   <button id="openFolderBtn" hidden title="Copy the containing folder path">Open folder</button>
+  <button id="newMdBtn" type="button">New MD</button>
   <label for="picker">Open file</label>
   <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
@@ -173,7 +181,23 @@
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
-  <article id="md"></article>
+  <section id="mdWrap">
+    <div class="y-toolbar" id="mdToolbar">
+      <button id="mdEditToggle" type="button">Edit</button>
+      <button id="mdSaveBtn" type="button">Save</button>
+      <label>Direction
+        <select id="mdDir">
+          <option value="auto">Auto</option>
+          <option value="ltr">LTR</option>
+          <option value="rtl">RTL</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <span id="mdDirty" class="info"></span>
+    </div>
+    <article id="md"></article>
+    <textarea id="mdEdit" spellcheck="false" placeholder="Markdown source…" aria-label="Markdown source"></textarea>
+  </section>
   <section id="yaml">
     <div class="y-toolbar">
       <button id="yExpand" type="button">Expand all</button>

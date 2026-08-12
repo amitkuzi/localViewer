@@ -17,7 +17,7 @@ export function renderTabBar(container, store, handlers = {}) {
 
     const label = container.ownerDocument.createElement('span');
     label.className = 'tab-label';
-    label.textContent = tab.name;
+    label.textContent = tab.name + (tab.dirty ? ' •' : '');
     el.appendChild(label);
 
     const close = container.ownerDocument.createElement('button');
