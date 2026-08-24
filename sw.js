@@ -1,5 +1,5 @@
 // localViewer service worker — cache app shell + CDN libs after first load.
-const CACHE = 'localviewer-v11';
+const CACHE = 'localviewer-v12';
 const SHELL = [
   './',
   './index.html',
@@ -13,7 +13,12 @@ const SHELL = [
   './src/mdview.js',
   './src/threemf.js',
   './manifest.webmanifest',
-  './icons/icon.svg'
+  './icons/icon.svg',
+  './assets/brand/fonts.css',
+  './assets/brand/fonts/archivo-latin-wght-normal.woff2',
+  './assets/brand/fonts/public-sans-latin-wght-normal.woff2',
+  './assets/brand/fonts/rubik-latin-wght-normal.woff2',
+  './assets/brand/fonts/rubik-hebrew-wght-normal.woff2'
 ];
 const CDN_HOSTS = ['cdn.jsdelivr.net'];
 

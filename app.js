@@ -37,7 +37,10 @@ let renderer, scene, camera, controls, currentMesh, gridHelper;
 
 // ---- view switching ----
 function show(view) {
-  drop.style.display    = view === 'drop'  ? 'flex' : 'none';
+  // Landing (drop hero + prose) and the viewer area are siblings, never stacked.
+  const isDrop = view === 'drop';
+  $('landing').style.display = isDrop ? 'block' : 'none';
+  document.querySelector('main').style.display = isDrop ? 'none' : 'block';
   mdWrap.style.display  = view === 'md'    ? 'flex' : 'none';
   yamlEl.style.display  = view === 'yaml'  ? 'flex' : 'none';
   csvEl.style.display   = view === 'csv'   ? 'flex' : 'none';
@@ -329,7 +332,7 @@ imageEl.addEventListener('pointercancel', endImgDrag);
 function ensureThree() {
   if (renderer) return;
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x101418);
+  scene.background = new THREE.Color(0x17130F);
 
   camera = new THREE.PerspectiveCamera(50, 1, 0.1, 5000);
   camera.position.set(120, 100, 140);
@@ -347,7 +350,7 @@ function ensureThree() {
   const fill = new THREE.DirectionalLight(0xffffff, 0.35);
   fill.position.set(-200, 100, -100); scene.add(fill);
 
-  gridHelper = new THREE.GridHelper(400, 40, 0x2a313a, 0x1a1f25);
+  gridHelper = new THREE.GridHelper(400, 40, 0x3A322A, 0x241E19);
   scene.add(gridHelper);
 
   const resize = () => {
