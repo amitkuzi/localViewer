@@ -1,7 +1,7 @@
 # localViewer
 
-> **Built by [Amit Kuzi](https://amitkuzi.com)** — Software Architect
-> [Live app](https://amitkuzi.github.io/localViewer/) · [Architecture case study](https://amitkuzi.com/projects/localviewer/) · [GitHub](https://github.com/amitkuzi)
+> **Built by [Amit Kuzi](https://amitkuzi.com)** — Software Architect & Engineering Consultant, Holon, Israel
+> [Live app](https://amitkuzi.github.io/localViewer/) · [Architecture case study](https://amitkuzi.com/projects/localviewer/) · [GitHub](https://github.com/amitkuzi) · [OneWall](https://amitkuzi.github.io/OneWall/)
 
 A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, **OpenSCAD (`.scad`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
@@ -147,3 +147,13 @@ and the `src/` modules work directly.
 - Web Share Target so Android can "Share to localViewer" from any file picker.
 - Optional offline vendor bundle (drop the CDN dependency entirely).
 - More formats: `.obj`, `.glb`, `.amf`.
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
+
+## Author
+
+**Amit Kuzi** — Software Architect & Engineering Consultant, Holon, Israel.
+Building software since 1997.
+[amitkuzi.com](https://amitkuzi.com) · [Case study](https://amitkuzi.com/projects/localviewer/) · [GitHub](https://github.com/amitkuzi)
