@@ -4,9 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#101418">
+<meta name="description" content="Local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, SCAD & images — by Amit Kuzi. Files never leave your browser.">
+<meta name="author" content="Amit Kuzi">
+<link rel="canonical" href="https://amitkuzi.github.io/localViewer/">
+<meta property="og:title" content="localViewer — Privacy-First File Viewer">
+<meta property="og:description" content="Open Markdown, YAML, CSV, STL, 3MF, STEP, SCAD and image files in your browser. Local-first, install-free, nothing uploaded.">
+<meta property="og:image" content="https://amitkuzi.github.io/localViewer/assets/og.png">
+<meta property="og:url" content="https://amitkuzi.github.io/localViewer/">
+<meta name="twitter:card" content="summary_large_image">
 <title>localViewer — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": "https://amitkuzi.github.io/localViewer/#app",
+  "name": "localViewer",
+  "url": "https://amitkuzi.github.io/localViewer/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "description": "A local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD and image files. Files are processed entirely in the browser and never uploaded.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "isAccessibleForFree": true,
+  "author": {
+    "@type": "Person",
+    "@id": "https://amitkuzi.com/#amit-kuzi",
+    "name": "Amit Kuzi",
+    "jobTitle": "Software Architect",
+    "url": "https://amitkuzi.com",
+    "sameAs": ["https://github.com/amitkuzi"]
+  }
+}
+</script>
 
 <script type="importmap">
 {
@@ -243,6 +273,132 @@
   </div>
   <div id="info"></div>
   <div id="err"></div>
+
+  <article id="static-content" style="padding:2rem;max-width:880px;margin:0 auto;line-height:1.6;font-size:0.95rem;position:relative;z-index:1">
+    <h2>What is localViewer?</h2>
+  <p><strong>localViewer</strong> is a privacy-first file viewer that opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, and image files directly in your browser — with one guarantee: <strong>files never leave your computer</strong>. No uploads, no servers, no tracking.</p>
+
+  <h3>Why localViewer?</h3>
+  <p>Most online file viewers upload your files to their servers. localViewer processes everything in your browser:</p>
+  <ul>
+    <li><strong>Private by default</strong> — Your CAD files, design documents, and data stay on your device.</li>
+    <li><strong>Works offline</strong> — After first load, the app works completely offline as a PWA.</li>
+    <li><strong>No installation needed</strong> — Open in any modern browser; optional desktop app on Windows via PWA install.</li>
+    <li><strong>Fast</strong> — No server round-trips; file rendering happens instantly on your hardware.</li>
+  </ul>
+
+  <h3>Supported Formats</h3>
+  <ul>
+    <li><strong>Documents:</strong> Markdown (`.md`, `.markdown`, `.txt`)</li>
+    <li><strong>Data:</strong> YAML (`.yaml`, `.yml`), CSV (`.csv`)</li>
+    <li><strong>3D Models:</strong> STL (`.stl`), 3MF (`.3mf`), STEP/STP (`.step`, `.stp`), OpenSCAD (`.scad`)</li>
+    <li><strong>Images:</strong> SVG, PNG, JPG, GIF, WebP, BMP, ICO, AVIF</li>
+  </ul>
+
+  <h3>Features</h3>
+  <p><strong>Markdown:</strong> Render, edit, save, and auto-align right-to-left / left-to-right text (supports Hebrew, Arabic, English mixed).</p>
+  <p><strong>YAML:</strong> Collapsible tree with expand/collapse controls for deep structures.</p>
+  <p><strong>CSV:</strong> Renders as a sortable table; auto-detects delimiters (comma, semicolon, tab).</p>
+  <p><strong>3D Models:</strong> STL, 3MF, and STEP files render in a WebGL viewer with color, wireframe, grid, and fit-to-view controls. 3MF slicer projects (Bambu Studio, PrusaSlicer) with multi-part geometry are fully supported.</p>
+  <p><strong>OpenSCAD:</strong> Compile `.scad` files in the browser and view the result in the 3D viewer.</p>
+  <p><strong>Images:</strong> Pan, zoom, and inspect transparency with background toggles.</p>
+  <p><strong>Multi-tab:</strong> Open multiple files at once; each opens in its own tab.</p>
+  <p><strong>Windows integration:</strong> Install as a PWA or register a per-user "Open with → localViewer" in File Explorer.</p>
+
+  <h3>How It Works</h3>
+  <p>localViewer is a static single-page app with no build step. When you open a file, the browser detects the file type and routes it to the appropriate loader: <em>marked</em> for Markdown, <em>js-yaml</em> for YAML, a hand-written parser for CSV, <em>three.js</em> + <em>ThreeMFLoader</em> for 3MF, <em>occt-import-js</em> (OpenCascade WASM) for STEP, and <em>openscad-wasm</em> for OpenSCAD. 3D models render in a Three.js WebGL canvas with interactive controls. All processing happens on your device; nothing is sent to any server.</p>
+
+  <h3>FAQ</h3>
+  <div itemscope itemtype="https://schema.org/FAQPage">
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">Is my data secure?</h4>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+        <p itemprop="text">Yes. All file processing happens in your browser on your device. Nothing is uploaded to any server, and there are no network requests for your file content. You can verify this by opening DevTools → Network tab and opening a file — no requests for your file data will appear.</p>
+      </div>
+    </div>
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">Does it work offline?</h4>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+        <p itemprop="text">Yes. After your first visit, localViewer registers as a PWA (Progressive Web App) and caches the app shell, three.js, marked, and other libraries. Subsequent visits work completely offline. Large libraries like the STEP importer (occt-import-js, ~7 MB) are fetched lazily on first use and then cached.</p>
+      </div>
+    </div>
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">Can I edit Markdown files?</h4>
+      <div itemprop="acceptedAnswer" itemscope ItemScope="https://schema.org/Answer">
+        <p itemprop="text">Yes. Click <strong>Edit</strong> to toggle between preview and source; click <strong>Save</strong> to write back to the original file (if you installed it as an app) or open a Save-As dialog. You can also create new Markdown files with <strong>New MD</strong>.</p>
+      </div>
+    </div>
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">How do I use it on Windows?</h4>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+        <p itemprop="text">Three ways: (1) Open the URL in a browser and drag-drop files; (2) Click <strong>Install app</strong> in the header to install as a PWA, then right-click a file → Open with → localViewer; (3) Use the PowerShell helper in the repo's <code>tools/</code> folder to register "Open with → localViewer" manually.</p>
+      </div>
+    </div>
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">Can I use it on Android?</h4>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+        <p itemprop="text">Yes. Open the URL on Android → menu → <strong>Add to Home screen</strong>, then open files via the file manager or by downloading them and selecting localViewer as the default viewer.</p>
+      </div>
+    </div>
+    <div itemprop="mainEntity" itemscope itemtype="https://schema.org/Question">
+      <h4 itemprop="name">What about multi-part 3MF files?</h4>
+      <div itemprop="acceptedAnswer" itemscope itemtype="https://schema.org/Answer">
+        <p itemprop="text">localViewer fully supports 3MF production extension multi-part files from slicer projects (Bambu Studio, OrcaSlicer, PrusaSlicer). These files split object geometry across multiple <code>.model</code> files within the archive; localViewer resolves and combines them so you see the complete assembly.</p>
+      </div>
+    </div>
+  </div>
+</article>
+
+  <footer class="author-block">
+    <img src="./assets/amit-kuzi.webp" alt="Amit Kuzi" width="72" height="72">
+    <div>
+      <p><strong>Built by <a href="https://amitkuzi.com" rel="author">Amit Kuzi</a></strong> — Software Architect</p>
+      <p>Amit Kuzi is an independent software architect in Holon, Israel. He has been building
+         software since 1997 and works across software architecture, .NET modernisation, applied AI,
+         and 3D printing process.</p>
+      <p>
+        <a href="https://amitkuzi.com">amitkuzi.com</a> ·
+        <a href="https://github.com/amitkuzi">GitHub</a> ·
+        <a href="https://amitkuzi.com/projects/localviewer/">Read the architecture case study</a>
+      </p>
+    </div>
+  </footer>
+
+  <style>
+    footer.author-block {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.5rem;
+      padding: 2rem;
+      margin-top: 3rem;
+      border-top: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      max-width: 880px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    footer.author-block img {
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      flex-shrink: 0;
+    }
+    footer.author-block p {
+      margin: 0.5rem 0;
+    }
+    footer.author-block p:first-child {
+      margin-top: 0;
+    }
+    footer.author-block a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    footer.author-block a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </main>
 
 <!-- Classic (non-module) script: exposes the global `occtimportjs` factory used

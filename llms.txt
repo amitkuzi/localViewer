@@ -1,0 +1,34 @@
+# localViewer
+
+A local-first, install-free file viewer for Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD and image files. No files are uploaded to any server — all processing happens in your browser.
+
+## Key features
+
+- **Privacy-first**: Files never leave your browser. No uploads, no servers, no tracking.
+- **Offline-first**: Works completely offline after first load (PWA).
+- **Multi-format support**: Markdown (with RTL/LTR auto-align), YAML trees, CSV tables, STL/3MF/STEP 3D models, OpenSCAD compilation, and images.
+- **Built-in editor**: Edit and save Markdown files directly.
+- **Windows integration**: Register "Open with → localViewer" for file types.
+
+## Technical notes
+
+- Static single-page app (no build step).
+- Loaders: marked, js-yaml, three.js, occt-import-js (STEP), openscad-wasm.
+- Three.js WebGL viewer for 3D geometry.
+- Full support for 3MF multi-part slicer projects (Bambu Studio, PrusaSlicer).
+
+## Built by
+
+Amit Kuzi — independent software architect. See https://amitkuzi.com for more.
+
+## Repository
+
+https://github.com/amitkuzi/localViewer
+
+## License
+
+Apache-2.0
+
+## Live app
+
+https://amitkuzi.github.io/localViewer/

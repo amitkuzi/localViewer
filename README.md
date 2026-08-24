@@ -1,5 +1,8 @@
 # localViewer
 
+> **Built by [Amit Kuzi](https://amitkuzi.com)** — Software Architect
+> [Live app](https://amitkuzi.github.io/localViewer/) · [Architecture case study](https://amitkuzi.com/projects/localviewer/) · [GitHub](https://github.com/amitkuzi)
+
 A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, **OpenSCAD (`.scad`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
