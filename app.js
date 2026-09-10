@@ -13,6 +13,7 @@ import { renderYamlValue, setAllOpen } from './src/yamlview.js';
 import { detectDelimiter, parseCSV, renderCsvTable, columnCount } from './src/csvview.js';
 import { applyTextDirection } from './src/mdview.js';
 import { parse3MFParts } from './src/threemf.js';
+import { computePeaks, formatTime } from './src/audioview.js';
 
 const $ = (id) => document.getElementById(id);
 const drop = $('drop'), mdWrap = $('mdWrap'), mdEl = $('md'), mdEdit = $('mdEdit'),
@@ -25,7 +26,10 @@ const drop = $('drop'), mdWrap = $('mdWrap'), mdEl = $('md'), mdEdit = $('mdEdit
       openFolderBtn = $('openFolderBtn'), tabbar = $('tabbar'),
       yamlEl = $('yaml'), yamlTree = $('yamlTree'),
       csvEl = $('csv'), csvTable = $('csvTable'), csvInfo = $('csvInfo'), csvHeaderToggle = $('csvHeaderToggle'),
-      imageEl = $('image'), imgEl = $('imgEl'), imgInfo = $('imgInfo');
+      imageEl = $('image'), imgEl = $('imgEl'), imgInfo = $('imgInfo'),
+      audioViewEl = $('audio'), audioEl = $('audioEl'), audioWave = $('audioWave'),
+      audioFFT = $('audioFFT'), audioPlayBtn = $('audioPlay'), audioTimeEl = $('audioTime'),
+      audioBackBtn = $('audioBack'), audioFwdBtn = $('audioFwd');
 
 // The folder of the file currently shown, for "Open folder".
 let activeFolder = '';
@@ -45,6 +49,7 @@ function show(view) {
   yamlEl.style.display  = view === 'yaml'  ? 'flex' : 'none';
   csvEl.style.display   = view === 'csv'   ? 'flex' : 'none';
   imageEl.style.display = view === 'image' ? 'flex' : 'none';
+  audioViewEl.style.display = view === 'audio' ? 'flex' : 'none';
   threeEl.style.display = view === '3d'    ? 'block': 'none';
   panel.hidden          = view !== '3d';
   err.style.display     = view === 'err'   ? 'flex' : 'none';
@@ -328,6 +333,127 @@ const endImgDrag = () => { imgDrag = null; imageEl.classList.remove('dragging');
 imageEl.addEventListener('pointerup', endImgDrag);
 imageEl.addEventListener('pointercancel', endImgDrag);
 
+// ---- Audio: minimal player — space to play/pause, wheel to seek,
+// waveform overview + a small live FFT of the current position ----
+let audioCtx, analyser;
+function ensureAudioGraph() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = audioCtx.createMediaElementSource(audioEl);
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+  requestAnimationFrame(audioLoop);
+}
+
+function sizeCanvas(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+    canvas.width = w * dpr; canvas.height = h * dpr;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+
+function drawWaveform(peaks, duration) {
+  const { ctx, w, h } = sizeCanvas(audioWave);
+  ctx.clearRect(0, 0, w, h);
+  const mid = h / 2, n = peaks.mins.length, barW = Math.max(1, w / n);
+  ctx.fillStyle = '#C4785A';
+  for (let i = 0; i < n; i++) {
+    const y1 = mid - peaks.maxs[i] * mid, y2 = mid - peaks.mins[i] * mid;
+    ctx.fillRect((i / n) * w, y1, barW, Math.max(1, y2 - y1));
+  }
+  if (duration) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect((audioEl.currentTime / duration) * w, 0, 1.5, h);
+  }
+}
+
+function drawFFT() {
+  const { ctx, w, h } = sizeCanvas(audioFFT);
+  ctx.clearRect(0, 0, w, h);
+  if (!analyser) return;
+  const data = new Uint8Array(analyser.frequencyBinCount);
+  analyser.getByteFrequencyData(data);
+  const barW = w / data.length;
+  ctx.fillStyle = '#C4785A';
+  for (let i = 0; i < data.length; i++) {
+    const bh = (data[i] / 255) * h;
+    ctx.fillRect(i * barW, h - bh, Math.max(1, barW - 1), bh);
+  }
+}
+
+function updateAudioTime() {
+  audioTimeEl.textContent = `${formatTime(audioEl.currentTime)} / ${formatTime(audioEl.duration)}`;
+}
+
+function audioLoop() {
+  const tab = store.active;
+  if (tab?.kind === 'audio') {
+    if (tab.payload.peaks) drawWaveform(tab.payload.peaks, tab.payload.duration);
+    drawFFT();
+    updateAudioTime();
+  }
+  requestAnimationFrame(audioLoop);
+}
+
+async function decodeWaveform(tab) {
+  try {
+    const audioBuffer = await audioCtx.decodeAudioData(tab.payload.buffer.slice(0));
+    tab.payload.duration = audioBuffer.duration;
+    const width = Math.max(audioWave.clientWidth, 300);
+    tab.payload.peaks = computePeaks(audioBuffer.getChannelData(0), width);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function renderAudio(tab) {
+  ensureAudioGraph();
+  if (audioEl.src !== tab.payload.url) audioEl.src = tab.payload.url;
+  if (!tab.payload.peaks && !tab.payload.decoding) {
+    tab.payload.decoding = true;
+    decodeWaveform(tab);
+  }
+  updateAudioTime();
+  show('audio');
+}
+
+audioPlayBtn.addEventListener('click', () => {
+  audioCtx?.resume();
+  if (audioEl.paused) audioEl.play(); else audioEl.pause();
+});
+audioEl.addEventListener('play',  () => { audioPlayBtn.textContent = '❚❚'; });
+audioEl.addEventListener('pause', () => { audioPlayBtn.textContent = '▶'; });
+
+audioBackBtn.addEventListener('click', () => { audioEl.currentTime = Math.max(audioEl.currentTime - 10, 0); });
+audioFwdBtn.addEventListener('click', () => { audioEl.currentTime = Math.min(audioEl.currentTime + 10, audioEl.duration || Infinity); });
+
+// Wheel over the waveform seeks; 2% of the track length per notch.
+audioWave.addEventListener('wheel', (e) => {
+  const tab = store.active;
+  if (!tab?.payload.duration) return;
+  e.preventDefault();
+  const step = tab.payload.duration * 0.02;
+  audioEl.currentTime = Math.min(Math.max(audioEl.currentTime + (e.deltaY < 0 ? -step : step), 0), tab.payload.duration);
+}, { passive: false });
+
+// Space bar starts/stops playback, but only while an audio tab is active and
+// focus isn't in a text field (so it doesn't hijack typing elsewhere).
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space') return;
+  if (store.active?.kind !== 'audio') return;
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
+  e.preventDefault();
+  audioCtx?.resume();
+  if (audioEl.paused) audioEl.play(); else audioEl.pause();
+});
+
 // ---- three.js scene ----
 function ensureThree() {
   if (renderer) return;
@@ -561,6 +687,7 @@ function renderActive() {
   else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
   else if (tab.kind === 'csv') renderCsvDoc(tab.payload.text);
   else if (tab.kind === 'image') renderImage(tab.payload.url);
+  else if (tab.kind === 'audio') renderAudio(tab);
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
   else if (tab.kind === 'step') loadSTEP(tab.payload.buffer);
@@ -570,7 +697,7 @@ function renderActive() {
 // Free the blob URL backing an image tab so closing/refreshing it doesn't leak.
 function revokeTabURL(id) {
   const tab = store.tabs.find(t => t.id === id);
-  if (tab?.kind === 'image' && tab.payload?.url) URL.revokeObjectURL(tab.payload.url);
+  if ((tab?.kind === 'image' || tab?.kind === 'audio') && tab.payload?.url) URL.revokeObjectURL(tab.payload.url);
 }
 
 const tabBarHandlers = {
@@ -595,12 +722,13 @@ async function loadFromBlob(name, blob, source, handle) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .svg, images`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .svg, images, audio`);
   }
   try {
     let payload;
     if (['md', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
     else if (meta.kind === 'image') payload = { url: URL.createObjectURL(blob) };
+    else if (meta.kind === 'audio') payload = { url: URL.createObjectURL(blob), buffer: await blob.arrayBuffer() };
     else payload = { buffer: await blob.arrayBuffer() };
     // A FileSystemFileHandle (only available when launched via the OS file
     // handler) lets the md editor write straight back to disk on Save.

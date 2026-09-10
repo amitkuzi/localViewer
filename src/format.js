@@ -6,6 +6,9 @@ const APP_NAME = 'localViewer';
 // Raster and vector image extensions we render through an <img> element.
 const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.ico', '.avif', '.svg'];
 
+// Audio extensions we render through an <audio> element.
+const AUDIO_EXT = ['.mp3', '.wav', '.ogg', '.oga', '.m4a', '.flac', '.aac', '.weba', '.opus'];
+
 // Map a file name to the internal viewer kind, or null if unsupported.
 export function detectKind(name) {
   const n = String(name || '').toLowerCase();
@@ -17,6 +20,7 @@ export function detectKind(name) {
   if (n.endsWith('.step') || n.endsWith('.stp')) return 'step';
   if (n.endsWith('.scad')) return 'scad';
   if (IMAGE_EXT.some(ext => n.endsWith(ext))) return 'image';
+  if (AUDIO_EXT.some(ext => n.endsWith(ext))) return 'audio';
   return null;
 }
 
@@ -47,7 +51,7 @@ export function hasResolvablePath(path) {
 
 // Window/tab title for the currently shown file.
 export function titleFor(name) {
-  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images`;
+  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images / audio`;
 }
 
 // Build the metadata shown in the header for an opened file.

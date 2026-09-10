@@ -36,7 +36,12 @@
         "image/webp": [".webp"],
         "image/bmp": [".bmp"],
         "image/x-icon": [".ico"],
-        "image/avif": [".avif"]
+        "image/avif": [".avif"],
+        "audio/wav": [".wav"],
+        "audio/mpeg": [".mp3"],
+        "audio/ogg": [".ogg"],
+        "audio/flac": [".flac"],
+        "audio/mp4": [".m4a"]
       },
       "icons": [
         { "src": "icons/icon.svg", "type": "image/svg+xml", "sizes": "any" }

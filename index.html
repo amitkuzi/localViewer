@@ -182,6 +182,15 @@
   #imgInfo{position:absolute;left:.75rem;bottom:.75rem;background:rgba(34,30,26,.88);
     border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
     pointer-events:none;backdrop-filter:blur(6px)}
+  #audio{display:none;position:absolute;inset:0;flex-direction:column;background:var(--bg)}
+  #audioEl{display:none}
+  #audioWave{flex:1;width:100%;cursor:ew-resize}
+  #audioFFT{height:90px;width:100%;border-top:1px solid var(--line)}
+  #audioBar{display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem;border-top:1px solid var(--line)}
+  #audioBar .spacer{flex:1}
+  #audioBar button{font:inherit;color:var(--text);background:#0F0C0A;border:1px solid var(--line);
+    border-radius:8px;padding:.3rem .7rem;cursor:pointer;min-width:2.4rem}
+  #audioBar button:hover{border-color:var(--accent)}
   #three{display:none;width:100%;height:100%}
   #info{position:absolute;left:.75rem;bottom:.75rem;background:rgba(34,30,26,.88);
     border:1px solid var(--line);border-radius:8px;padding:.45rem .65rem;font-size:.8rem;color:var(--muted);
@@ -284,7 +293,7 @@
   <button id="newMdBtn" type="button">New MD</button>
   <button id="aboutBtn" type="button">About</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac,.weba,.opus" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -344,6 +353,19 @@
     </div>
     <div id="imgInfo"></div>
   </div>
+  <div id="audio">
+    <audio id="audioEl" preload="metadata"></audio>
+    <canvas id="audioWave"></canvas>
+    <canvas id="audioFFT"></canvas>
+    <div id="audioBar">
+      <button id="audioBack" type="button" title="Back 10s">&#9664;&#9664;</button>
+      <button id="audioPlay" type="button" title="Play/Pause (Space)">&#9658;</button>
+      <button id="audioFwd" type="button" title="Forward 10s">&#9654;&#9654;</button>
+      <span id="audioTime" class="info">0:00 / 0:00</span>
+      <span class="spacer"></span>
+      <span class="info">space play/pause &middot; wheel to seek</span>
+    </div>
+  </div>
   <div id="three"></div>
   <div id="panel" hidden>
     <label>Color <input id="colorPick" type="color" value="#C4B0A0"></label>
@@ -357,14 +379,14 @@
 
 <section id="landing">
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.csv</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.scad</code>, <code>.svg</code>, or image file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.csv</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.scad</code>, <code>.svg</code>, image, or audio file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
 
   <article id="static-content">
     <h2>What is localViewer?</h2>
-  <p><strong>localViewer</strong> is a privacy-first file viewer that opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, and image files directly in your browser — with one guarantee: <strong>files never leave your computer</strong>. No uploads, no servers, no tracking.</p>
+  <p><strong>localViewer</strong> is a privacy-first file viewer that opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, image, and audio files directly in your browser — with one guarantee: <strong>files never leave your computer</strong>. No uploads, no servers, no tracking.</p>
 
   <h3>Why localViewer?</h3>
   <p>Most online file viewers upload your files to their servers. localViewer processes everything in your browser:</p>
@@ -381,6 +403,7 @@
     <li><strong>Data:</strong> YAML (`.yaml`, `.yml`), CSV (`.csv`)</li>
     <li><strong>3D Models:</strong> STL (`.stl`), 3MF (`.3mf`), STEP/STP (`.step`, `.stp`), OpenSCAD (`.scad`)</li>
     <li><strong>Images:</strong> SVG, PNG, JPG, GIF, WebP, BMP, ICO, AVIF</li>
+    <li><strong>Audio:</strong> MP3, WAV, OGG, M4A, FLAC, AAC, WEBA, OPUS</li>
   </ul>
 
   <h3>Features</h3>
@@ -390,6 +413,7 @@
   <p><strong>3D Models:</strong> STL, 3MF, and STEP files render in a WebGL viewer with color, wireframe, grid, and fit-to-view controls. 3MF slicer projects (Bambu Studio, PrusaSlicer) with multi-part geometry are fully supported.</p>
   <p><strong>OpenSCAD:</strong> Compile `.scad` files in the browser and view the result in the 3D viewer.</p>
   <p><strong>Images:</strong> Pan, zoom, and inspect transparency with background toggles.</p>
+  <p><strong>Audio:</strong> Waveform overview with live FFT, play/pause, and skip &plusmn;10s controls.</p>
   <p><strong>Multi-tab:</strong> Open multiple files at once; each opens in its own tab.</p>
   <p><strong>Windows integration:</strong> Install as a PWA or register a per-user "Open with → localViewer" in File Explorer.</p>
 
@@ -507,7 +531,7 @@
       <code>.3mf</code> and friends. After the first load it works fully offline.
     </p>
 
-    <p class="ver">localViewer · v1.3.0 · CC BY 4.0</p>
+    <p class="ver">localViewer · v1.4.0 · CC BY 4.0</p>
   </div>
 </dialog>
 
