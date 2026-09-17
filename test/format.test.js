@@ -24,6 +24,8 @@ describe('detectKind', () => {
     expect(detectKind('part.step')).toBe('step');
     expect(detectKind('Part.STP')).toBe('step');
     expect(detectKind('Bracket.SCAD')).toBe('scad');
+    expect(detectKind('model.gltf')).toBe('gltf');
+    expect(detectKind('Model.GLB')).toBe('gltf');
   });
   it('recognises image formats', () => {
     expect(detectKind('photo.png')).toBe('image');

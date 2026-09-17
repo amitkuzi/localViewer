@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { unzipSync, strFromU8 } from 'fflate';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
@@ -498,6 +499,12 @@ function ensureThree() {
   $('fitBtn').addEventListener('click', fitView);
 }
 
+// Texture maps a material may hold (glTF materials can carry several).
+const TEXTURE_SLOTS = [
+  'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap',
+  'aoMap', 'alphaMap', 'bumpMap', 'displacementMap', 'envMap', 'lightMap'
+];
+
 function clearModel() {
   if (!currentMesh) return;
   scene.remove(currentMesh);
@@ -505,7 +512,10 @@ function clearModel() {
     if (o.geometry) o.geometry.dispose();
     if (o.material) {
       const mats = Array.isArray(o.material) ? o.material : [o.material];
-      mats.forEach(m => m.dispose());
+      mats.forEach(m => {
+        TEXTURE_SLOTS.forEach(slot => m[slot]?.dispose());
+        m.dispose();
+      });
     }
   });
   currentMesh = null;
@@ -527,6 +537,9 @@ function applyWire(on) {
 function fitView() {
   if (!currentMesh) return;
   const box = new THREE.Box3().setFromObject(currentMesh);
+  // An empty box (e.g. a glTF scene with no mesh geometry — only lights/cameras)
+  // leaves min/max at +/-Infinity, which would otherwise propagate as NaN.
+  if (box.isEmpty()) { info.textContent = 'No visible geometry in this file.'; return; }
   const size = box.getSize(new THREE.Vector3());
   const center = box.getCenter(new THREE.Vector3());
   const maxDim = Math.max(size.x, size.y, size.z) || 1;
@@ -642,6 +655,30 @@ async function loadSTEP(buffer) {
   }
 }
 
+// ---- glTF / GLB ----
+// GLTFLoader.parse() handles both binary GLB and JSON glTF ArrayBuffers.
+// Unlike STL/3MF/STEP (Z-up, single untextured mesh we recolor), glTF is
+// already Y-up and carries its own materials/textures, so we show the scene
+// as authored rather than forcing a uniform color.
+async function loadGLTF(buffer) {
+  ensureThree();
+  clearModel();
+  try {
+    const gltf = await new Promise((resolve, reject) => {
+      new GLTFLoader().parse(buffer, '', resolve, reject);
+    });
+    if (!gltf.scene) return showError('This glTF/GLB file has no default scene to display.');
+    currentMesh = gltf.scene;
+    scene.add(currentMesh);
+    show('3d'); fitView();
+  } catch (e) {
+    console.error(e);
+    showError('Failed to load glTF/GLB file.\n\n'
+      + 'Note: a .gltf file referencing external .bin/texture files can\'t be resolved from a single dropped file — use the self-contained .glb form instead.\n\n'
+      + (e.message || e));
+  }
+}
+
 // ---- OpenSCAD (.scad, compiled in the browser by openscad-wasm) ----
 // The engine is ~14 MB, so it's imported lazily on first use — same deal as the
 // STEP importer above. It compiles the source to ASCII STL, which the STL path
@@ -691,6 +728,7 @@ function renderActive() {
   else if (tab.kind === 'stl') loadSTL(tab.payload.buffer);
   else if (tab.kind === '3mf') load3MF(tab.payload.buffer);
   else if (tab.kind === 'step') loadSTEP(tab.payload.buffer);
+  else if (tab.kind === 'gltf') loadGLTF(tab.payload.buffer);
   else if (tab.kind === 'scad') loadSCAD(tab.payload.text);
 }
 
@@ -722,7 +760,7 @@ async function loadFromBlob(name, blob, source, handle) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .svg, images, audio`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .gltf, .glb, .svg, images, audio`);
   }
   try {
     let payload;

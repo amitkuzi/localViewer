@@ -4,15 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#17130F">
-<meta name="description" content="Local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, SCAD & images — by Amit Kuzi. Files never leave your browser.">
+<meta name="description" content="Local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, SCAD, glTF/GLB & images — by Amit Kuzi. Files never leave your browser.">
 <meta name="author" content="Amit Kuzi">
 <link rel="canonical" href="https://amitkuzi.github.io/localViewer/">
 <meta property="og:title" content="localViewer — Privacy-First File Viewer">
-<meta property="og:description" content="Open Markdown, YAML, CSV, STL, 3MF, STEP, SCAD and image files in your browser. Local-first, install-free, nothing uploaded.">
+<meta property="og:description" content="Open Markdown, YAML, CSV, STL, 3MF, STEP, SCAD, glTF/GLB and image files in your browser. Local-first, install-free, nothing uploaded.">
 <meta property="og:image" content="https://amitkuzi.github.io/localViewer/assets/og.png">
 <meta property="og:url" content="https://amitkuzi.github.io/localViewer/">
 <meta name="twitter:card" content="summary_large_image">
-<title>localViewer — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images</title>
+<title>localViewer — MD / YAML / CSV / STL / 3MF / STEP / SCAD / glTF / images</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <script type="application/ld+json">
@@ -24,7 +24,7 @@
   "url": "https://amitkuzi.github.io/localViewer/",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
-  "description": "A local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD and image files. Files are processed entirely in the browser and never uploaded.",
+  "description": "A local-first, install-free viewer for Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, glTF/GLB and image files. Files are processed entirely in the browser and never uploaded.",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "isAccessibleForFree": true,
   "author": {
@@ -293,7 +293,7 @@
   <button id="newMdBtn" type="button">New MD</button>
   <button id="aboutBtn" type="button">About</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac,.weba,.opus" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.gltf,.glb,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac,.weba,.opus" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -379,14 +379,14 @@
 
 <section id="landing">
   <div id="drop">
-    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.csv</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.scad</code>, <code>.svg</code>, image, or audio file here</div>
+    <div class="big">Drop a <code>.md</code>, <code>.yaml</code>, <code>.csv</code>, <code>.stl</code>, <code>.3mf</code>, <code>.step</code>, <code>.scad</code>, <code>.gltf</code>, <code>.glb</code>, <code>.svg</code>, image, or audio file here</div>
     <div>or click <strong>Open file</strong>, or pass <code>?src=URL</code> in the address.</div>
     <div style="opacity:.7">Click <strong>Install app</strong> once — then these files open straight from Explorer via <em>Open with → localViewer</em>.</div>
   </div>
 
   <article id="static-content">
     <h2>What is localViewer?</h2>
-  <p><strong>localViewer</strong> is a privacy-first file viewer that opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, image, and audio files directly in your browser — with one guarantee: <strong>files never leave your computer</strong>. No uploads, no servers, no tracking.</p>
+  <p><strong>localViewer</strong> is a privacy-first file viewer that opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, glTF/GLB, image, and audio files directly in your browser — with one guarantee: <strong>files never leave your computer</strong>. No uploads, no servers, no tracking.</p>
 
   <h3>Why localViewer?</h3>
   <p>Most online file viewers upload your files to their servers. localViewer processes everything in your browser:</p>
@@ -401,7 +401,7 @@
   <ul>
     <li><strong>Documents:</strong> Markdown (`.md`, `.markdown`, `.txt`)</li>
     <li><strong>Data:</strong> YAML (`.yaml`, `.yml`), CSV (`.csv`)</li>
-    <li><strong>3D Models:</strong> STL (`.stl`), 3MF (`.3mf`), STEP/STP (`.step`, `.stp`), OpenSCAD (`.scad`)</li>
+    <li><strong>3D Models:</strong> STL (`.stl`), 3MF (`.3mf`), STEP/STP (`.step`, `.stp`), OpenSCAD (`.scad`), glTF/GLB (`.gltf`, `.glb`)</li>
     <li><strong>Images:</strong> SVG, PNG, JPG, GIF, WebP, BMP, ICO, AVIF</li>
     <li><strong>Audio:</strong> MP3, WAV, OGG, M4A, FLAC, AAC, WEBA, OPUS</li>
   </ul>
@@ -411,6 +411,7 @@
   <p><strong>YAML:</strong> Collapsible tree with expand/collapse controls for deep structures.</p>
   <p><strong>CSV:</strong> Renders as a sortable table; auto-detects delimiters (comma, semicolon, tab).</p>
   <p><strong>3D Models:</strong> STL, 3MF, and STEP files render in a WebGL viewer with color, wireframe, grid, and fit-to-view controls. 3MF slicer projects (Bambu Studio, PrusaSlicer) with multi-part geometry are fully supported.</p>
+  <p><strong>glTF/GLB:</strong> Renders the scene with its own materials and textures as authored (self-contained `.glb` recommended; `.gltf` files that reference external `.bin`/texture files can't be resolved from a single dropped file).</p>
   <p><strong>OpenSCAD:</strong> Compile `.scad` files in the browser and view the result in the 3D viewer.</p>
   <p><strong>Images:</strong> Pan, zoom, and inspect transparency with background toggles.</p>
   <p><strong>Audio:</strong> Waveform overview with live FFT, play/pause, and skip &plusmn;10s controls.</p>
@@ -418,7 +419,7 @@
   <p><strong>Windows integration:</strong> Install as a PWA or register a per-user "Open with → localViewer" in File Explorer.</p>
 
   <h3>How It Works</h3>
-  <p>localViewer is a static single-page app with no build step. When you open a file, the browser detects the file type and routes it to the appropriate loader: <em>marked</em> for Markdown, <em>js-yaml</em> for YAML, a hand-written parser for CSV, <em>three.js</em> + <em>ThreeMFLoader</em> for 3MF, <em>occt-import-js</em> (OpenCascade WASM) for STEP, and <em>openscad-wasm</em> for OpenSCAD. 3D models render in a Three.js WebGL canvas with interactive controls. All processing happens on your device; nothing is sent to any server.</p>
+  <p>localViewer is a static single-page app with no build step. When you open a file, the browser detects the file type and routes it to the appropriate loader: <em>marked</em> for Markdown, <em>js-yaml</em> for YAML, a hand-written parser for CSV, <em>three.js</em> + <em>ThreeMFLoader</em> for 3MF, <em>occt-import-js</em> (OpenCascade WASM) for STEP, <em>GLTFLoader</em> for glTF/GLB, and <em>openscad-wasm</em> for OpenSCAD. 3D models render in a Three.js WebGL canvas with interactive controls. All processing happens on your device; nothing is sent to any server.</p>
 
   <h3>FAQ</h3>
   <div itemscope itemtype="https://schema.org/FAQPage">
@@ -504,15 +505,15 @@
 
     <h3>What this is</h3>
     <p>
-      localViewer opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD and image
-      files with one guarantee: <strong>files never leave your computer</strong>.
+      localViewer opens Markdown, YAML, CSV, STL, 3MF, STEP, OpenSCAD, glTF/GLB
+      and image files with one guarantee: <strong>files never leave your computer</strong>.
       No uploads, no servers, no tracking — everything is parsed and rendered in
       your own browser.
     </p>
     <div class="pills">
       <span class="pill">MD</span><span class="pill">YAML</span><span class="pill">CSV</span>
       <span class="pill">STL</span><span class="pill">3MF</span><span class="pill">STEP</span>
-      <span class="pill">SCAD</span><span class="pill">Images</span>
+      <span class="pill">SCAD</span><span class="pill">glTF</span><span class="pill">Images</span>
     </div>
 
     <h3>Links</h3>
@@ -531,7 +532,7 @@
       <code>.3mf</code> and friends. After the first load it works fully offline.
     </p>
 
-    <p class="ver">localViewer · v1.4.0 · CC BY 4.0</p>
+    <p class="ver">localViewer · v1.5.0 · CC BY 4.0</p>
   </div>
 </dialog>
 

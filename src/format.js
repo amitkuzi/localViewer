@@ -19,6 +19,7 @@ export function detectKind(name) {
   if (n.endsWith('.3mf')) return '3mf';
   if (n.endsWith('.step') || n.endsWith('.stp')) return 'step';
   if (n.endsWith('.scad')) return 'scad';
+  if (n.endsWith('.gltf') || n.endsWith('.glb')) return 'gltf';
   if (IMAGE_EXT.some(ext => n.endsWith(ext))) return 'image';
   if (AUDIO_EXT.some(ext => n.endsWith(ext))) return 'audio';
   return null;
@@ -51,7 +52,7 @@ export function hasResolvablePath(path) {
 
 // Window/tab title for the currently shown file.
 export function titleFor(name) {
-  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / SCAD / images / audio`;
+  return name ? `${name} — ${APP_NAME}` : `${APP_NAME} — MD / YAML / CSV / STL / 3MF / STEP / SCAD / glTF / images / audio`;
 }
 
 // Build the metadata shown in the header for an opened file.

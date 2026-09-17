@@ -3,7 +3,7 @@
 > **Built by [Amit Kuzi](https://amitkuzi.com)** — Software Architect & Engineering Consultant, Holon, Israel
 > [Live app](https://amitkuzi.github.io/localViewer/) · [Architecture case study](https://amitkuzi.com/projects/localviewer/) · [GitHub](https://github.com/amitkuzi) · [OneWall](https://amitkuzi.github.io/OneWall/)
 
-A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, **OpenSCAD (`.scad`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
+A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)**, **CSV (`.csv`)**, **STL (`.stl`)**, **3MF (`.3mf`)**, **STEP (`.step` / `.stp`)**, **OpenSCAD (`.scad`)**, **glTF/GLB (`.gltf`, `.glb`)**, and **images (`.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.bmp`, `.ico`, `.avif`)** files.
 
 - Runs as a single static page in Edge / Chrome / any modern browser.
 - Same URL works on Windows and Android — installable as a PWA, works offline after first load.
@@ -41,6 +41,10 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
 - **OpenSCAD viewer** — `.scad` files are compiled in the browser by
   [openscad-wasm](https://www.npmjs.com/package/openscad-wasm) and shown in the same 3D viewer.
   `include <>` / `use <>` of other files is not resolved — only the opened file is compiled.
+- **glTF/GLB viewer** — `.gltf`/`.glb` files render via three.js's `GLTFLoader`, keeping their
+  own materials and textures instead of the uniform color/wireframe styling used for
+  STL/3MF/STEP. Self-contained `.glb` is recommended; a `.gltf` referencing external
+  `.bin`/texture files can't be resolved from a single dropped file.
 
 ## Try it
 
@@ -76,7 +80,7 @@ cd <path to viewer>\tools
 .\register-windows.ps1
 ```
 
-This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`, `.step`, `.stp`, `.scad`.
+This registers a per-user "Open with → localViewer" entry for `.md`, `.stl`, `.3mf`, `.step`, `.stp`, `.scad`, `.gltf`, `.glb`.
 
 ### Use
 In File Explorer: right-click a supported file → **Open with → localViewer**.
@@ -93,7 +97,7 @@ To make it the default for that extension: **Open with → Choose another app �
 | File | Purpose |
 |---|---|
 | `index.html` | UI shell + import map + PWA hooks |
-| `app.js` | Orchestration: tabs, loaders (STL via three.js, 3MF via threemf.js, STEP via occt-import-js, MD via marked, YAML via js-yaml, CSV via csvview) |
+| `app.js` | Orchestration: tabs, loaders (STL via three.js, 3MF via threemf.js, STEP via occt-import-js, glTF/GLB via GLTFLoader, MD via marked, YAML via js-yaml, CSV via csvview) |
 | `src/format.js` | Pure helpers: file-kind detection, path/title parsing |
 | `src/header.js` | Header file-info rendering (name / path / Open folder) |
 | `src/tabs.js` | `TabStore` — open/activate/close document tabs |
@@ -146,7 +150,7 @@ and the `src/` modules work directly.
 
 - Web Share Target so Android can "Share to localViewer" from any file picker.
 - Optional offline vendor bundle (drop the CDN dependency entirely).
-- More formats: `.obj`, `.glb`, `.amf`.
+- More formats: `.obj`, `.amf`.
 
 ## License
 
