@@ -1,10 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#101418"/>
-  <g fill="none" stroke="#6cb6ff" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
-    <path d="M256 88 L408 176 L408 336 L256 424 L104 336 L104 176 Z"/>
-    <path d="M256 88 L256 248 L408 176"/>
-    <path d="M256 248 L104 176"/>
-    <path d="M256 248 L256 424"/>
+  <!-- Brand kit: bg #17130F, panel #221E1A, accent #E4632D, accent-2 #C9A227, text #EDE7DE -->
+  <rect width="512" height="512" rx="112" fill="#17130F"/>
+  <rect x="20" y="20" width="472" height="472" rx="94" fill="none" stroke="#3A322A" stroke-width="4"/>
+  <!-- isometric cube (3D viewer), kept inside maskable safe zone -->
+  <path d="M256 112 L380 184 L256 256 L132 184 Z" fill="#C9A227"/>
+  <path d="M132 184 L256 256 L256 400 L132 328 Z" fill="#E4632D"/>
+  <path d="M380 184 L256 256 L256 400 L380 328 Z" fill="#E4632D" opacity=".62"/>
+  <g fill="none" stroke="#17130F" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 256 L256 400"/>
+    <path d="M132 184 L256 256 L380 184"/>
   </g>
-  <text x="256" y="478" text-anchor="middle" font-family="Segoe UI,Arial" font-size="56" fill="#80e0a7" font-weight="700">VIEW</text>
+  <!-- brand stacked-bars mark as base -->
+  <rect x="196" y="426" width="120" height="14" rx="5" fill="#EDE7DE" opacity=".85"/>
+  <rect x="226" y="450" width="60" height="14" rx="5" fill="#EDE7DE" opacity=".5"/>
 </svg>
