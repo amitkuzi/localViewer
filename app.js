@@ -54,6 +54,7 @@ function show(view) {
   threeEl.style.display = view === '3d'    ? 'block': 'none';
   panel.hidden          = view !== '3d';
   err.style.display     = view === 'err'   ? 'flex' : 'none';
+  $('loading').style.display = view === 'loading' ? 'flex' : 'none';
   info.style.display    = view === '3d'    ? 'block': 'none';
 }
 function showError(msg) { err.textContent = msg; show('err'); }
@@ -720,6 +721,11 @@ function renderActive() {
   }
   kindBadge.textContent = tab.kind.toUpperCase();
   setActiveFileMeta(tab.meta);
+  if (tab.loading) {
+    $('loadingText').textContent = `Loading ${tab.name}…`;
+    show('loading');
+    return;
+  }
   if (tab.kind === 'md') renderMdTab(tab);
   else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
   else if (tab.kind === 'csv') renderCsvDoc(tab.payload.text);
@@ -748,8 +754,18 @@ const tabBarHandlers = {
   }
 };
 
+// Re-render the viewer only when the active document (or its payload / loading
+// state) actually changed, so a background tab finishing its load never
+// disturbs the tab the user is working in.
+let renderedTab = null, renderedPayload = null, renderedLoading = false;
 store.subscribe(() => {
   renderTabBar(tabbar, store, tabBarHandlers);
+  const tab = store.active;
+  if (tab && tab === renderedTab && tab.payload === renderedPayload
+      && !!tab.loading === renderedLoading) return;
+  renderedTab = tab;
+  renderedPayload = tab ? tab.payload : null;
+  renderedLoading = !!tab?.loading;
   renderActive();
 });
 
@@ -762,6 +778,13 @@ async function loadFromBlob(name, blob, source, handle) {
     kindBadge.textContent = 'unknown';
     return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .gltf, .glb, .svg, images, audio`);
   }
+  // Prior tab for the same source: free its object URL before replacing it.
+  const prior = store.tabs.find(t => t.source === meta.source);
+  if (prior) revokeTabURL(prior.id);
+  // Show the tab (with a spinner) right away; the payload is read afterwards so
+  // the other tabs stay usable while this file is being processed.
+  const tab = store.open({ name, source: meta.source, kind: meta.kind, meta, payload: null, loading: true, dirty: false });
+  await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
   try {
     let payload;
     if (['md', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
@@ -771,14 +794,17 @@ async function loadFromBlob(name, blob, source, handle) {
     // A FileSystemFileHandle (only available when launched via the OS file
     // handler) lets the md editor write straight back to disk on Save.
     if (handle && meta.kind === 'md') payload.handle = handle;
-    // Re-opening the same source replaces the tab's payload; free the old
-    // object URL first so we don't leak blobs.
-    const prior = store.tabs.find(t => t.source === meta.source);
-    if (prior) revokeTabURL(prior.id);
-    store.open({ name, source: meta.source, kind: meta.kind, meta, payload });
+    if (!store.tabs.includes(tab)) { // closed while loading
+      if (payload.url) URL.revokeObjectURL(payload.url);
+      return;
+    }
+    store.update(tab.id, { payload, loading: false });
   } catch (e) {
     console.error(e);
-    showError(`Failed to load ${name}\n\n${e.message || e}`);
+    store.close(tab.id);
+    showError(`Failed to load ${name}
+
+${e.message || e}`);
   }
 }
 

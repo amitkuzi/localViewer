@@ -41,6 +41,15 @@ export class TabStore {
     return rec;
   }
 
+  // Patch a tab in place (e.g. loading -> ready) and notify subscribers.
+  update(id, patch) {
+    const tab = this.tabs.find(t => t.id === id);
+    if (!tab) return null;
+    Object.assign(tab, patch, { id });
+    this._emit();
+    return tab;
+  }
+
   activate(id) {
     if (id !== this.activeId && this.tabs.some(t => t.id === id)) {
       this.activeId = id;

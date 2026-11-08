@@ -67,4 +67,14 @@ describe('renderTabBar (DOM)', () => {
     expect(store.count).toBe(0);
     expect(container.hidden).toBe(true);
   });
+
+  it('shows a spinner on a loading tab and drops it once loaded', () => {
+    const t = store.open({ ...doc('a.md'), payload: null, loading: true });
+    const tabEl = () => container.querySelector('.tab');
+    expect(tabEl().querySelector('.tab-spinner')).not.toBeNull();
+    expect(tabEl().classList.contains('loading')).toBe(true);
+    expect(tabEl().querySelector('.tab-label').textContent).toBe('a.md');
+    store.update(t.id, { payload: { text: 'x' }, loading: false });
+    expect(tabEl().querySelector('.tab-spinner')).toBeNull();
+  });
 });

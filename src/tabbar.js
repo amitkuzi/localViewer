@@ -15,6 +15,16 @@ export function renderTabBar(container, store, handlers = {}) {
     el.setAttribute('aria-selected', String(tab.id === store.activeId));
     el.title = tab.meta?.displayPath || tab.name;
 
+    if (tab.loading) {
+      el.classList.add('loading');
+      el.setAttribute('aria-busy', 'true');
+      const spin = container.ownerDocument.createElement('span');
+      spin.className = 'tab-spinner';
+      spin.setAttribute('role', 'status');
+      spin.setAttribute('aria-label', 'Loading');
+      el.appendChild(spin);
+    }
+
     const label = container.ownerDocument.createElement('span');
     label.className = 'tab-label';
     label.textContent = tab.name + (tab.dirty ? ' •' : '');
