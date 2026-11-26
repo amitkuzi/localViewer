@@ -2,7 +2,32 @@
 // so RTL (Hebrew/Arabic) and LTR paragraphs each align correctly, while code
 // blocks stay pinned LTR.
 import { describe, it, expect, beforeEach } from 'vitest';
-import { applyTextDirection } from '../src/mdview.js';
+import { applyTextDirection, addHeadingIds, findAnchorTarget } from '../src/mdview.js';
+
+describe('heading anchors (DOM)', () => {
+  let el;
+  beforeEach(() => {
+    document.body.innerHTML = '<article id="md"></article>';
+    el = document.getElementById('md');
+  });
+
+  it('gives headings unique GitHub-style ids and keeps existing ones', () => {
+    el.innerHTML = '<h1>Intro</h1><h2>Setup Steps</h2><h2>Intro</h2><h3 id="custom">X</h3>';
+    addHeadingIds(el);
+    expect([...el.querySelectorAll('h1,h2,h3')].map(h => h.id))
+      .toEqual(['intro', 'setup-steps', 'intro-1', 'custom']);
+  });
+
+  it('finds anchor targets by id, by name, or by heading text', () => {
+    el.innerHTML = '<h2>Setup Steps</h2><a name="old"></a><p id="p1">x</p>';
+    addHeadingIds(el);
+    expect(findAnchorTarget(el, 'setup-steps').tagName).toBe('H2');
+    expect(findAnchorTarget(el, 'Setup Steps').tagName).toBe('H2');
+    expect(findAnchorTarget(el, 'old').tagName).toBe('A');
+    expect(findAnchorTarget(el, 'p1').id).toBe('p1');
+    expect(findAnchorTarget(el, 'missing')).toBeNull();
+  });
+});
 
 describe('applyTextDirection (DOM)', () => {
   let el;

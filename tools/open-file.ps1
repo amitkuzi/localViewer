@@ -5,7 +5,8 @@
 .DESCRIPTION
     Starts a tiny loopback HTTP server (TcpListener) that serves:
       - the viewer SPA from the parent folder
-      - the requested file under /file/<name>
+      - the requested file under /file/<name>, plus the other files in its
+        folder (so links between local documents can be followed)
     Then opens Edge in app-window mode pointing at the viewer with ?src=.
 
     Stays alive while the page is in use; auto-exits after idle timeout.
@@ -41,6 +42,8 @@ $file       = Get-Item -LiteralPath $Path
 $viewerDir  = Split-Path -Parent $PSScriptRoot      # parent of tools/ = viewer/
 $viewerDirN = ([IO.Path]::GetFullPath($viewerDir)).TrimEnd('\') + '\'
 $fileName   = $file.Name
+$fileDir    = $file.DirectoryName
+$fileDirN   = ([IO.Path]::GetFullPath($fileDir)).TrimEnd('\') + '\'
 
 # ---- start TCP listener ----
 $listener = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback, $Port)
@@ -170,11 +173,15 @@ try {
             $ctype = 'application/octet-stream'
 
             if ($urlPath -like '/file/*') {
-                # Only the configured file is exposed under /file/
-                $requestedName = [uri]::UnescapeDataString($urlPath.Substring('/file/'.Length))
-                if ($requestedName -eq $fileName) {
-                    $bytes = [System.IO.File]::ReadAllBytes($file.FullName)
-                    $ext   = $file.Extension.ToLower()
+                # The opened file's folder (and its subfolders) is exposed under
+                # /file/ so relative links between documents can be followed.
+                # Anything resolving outside that folder is refused.
+                $requested = [uri]::UnescapeDataString($urlPath.Substring('/file/'.Length)) -replace '/', '\'
+                $candidate = [IO.Path]::GetFullPath((Join-Path $fileDir $requested))
+                if ($candidate.StartsWith($fileDirN, [System.StringComparison]::OrdinalIgnoreCase) -and
+                    (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+                    $bytes = [System.IO.File]::ReadAllBytes($candidate)
+                    $ext   = [IO.Path]::GetExtension($candidate).ToLower()
                     if ($mime.ContainsKey($ext)) { $ctype = $mime[$ext] }
                 }
             }

@@ -24,6 +24,11 @@ A tiny, install-free viewer for **Markdown (`.md`)**, **YAML (`.yaml` / `.yml`)*
   **Save** writes straight back to the original file (installed-app / File System Access API)
   or opens a Save-As dialog otherwise. **New MD** creates a blank file. Ctrl/Cmd+S saves
   while editing; unsaved tabs are marked and confirm before closing.
+- **Links in Markdown** — click a link to follow it: `#heading` scrolls within the document,
+  `http(s)` links open in a new browser tab, and relative/local links (`other.md`,
+  `../docs/page.html#setup`, `D:\docs\a.md`) open in a new localViewer tab. For files opened
+  from disk, the first link asks once for the containing folder (remembered afterwards).
+- **HTML viewer** — `.html`/`.htm` files render in a sandboxed preview tab.
 - **Markdown RTL/LTR** — by default each rendered block (paragraph, heading, list item, table
   cell) automatically aligns right-to-left or left-to-right based on its own content, so
   Hebrew/Arabic and English text render correctly even mixed in the same document. A

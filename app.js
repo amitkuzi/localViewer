@@ -6,13 +6,19 @@ import { unzipSync, strFromU8 } from 'fflate';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import { load as parseYaml } from 'js-yaml';
-import { fileMeta, basename } from './src/format.js';
+import { fileMeta, basename, dirname, detectKind } from './src/format.js';
 import { renderFileMeta } from './src/header.js';
 import { TabStore } from './src/tabs.js';
 import { renderTabBar } from './src/tabbar.js';
 import { renderYamlValue, setAllOpen } from './src/yamlview.js';
 import { detectDelimiter, parseCSV, renderCsvTable, columnCount } from './src/csvview.js';
-import { applyTextDirection } from './src/mdview.js';
+import { applyTextDirection, addHeadingIds, findAnchorTarget } from './src/mdview.js';
+import {
+  classifyLink, resolveSegments, levelsAboveRoot, segmentsAfterRoot,
+  relativeToDir, joinDiskPath, withBaseHref
+} from './src/links.js';
+import { findRootFor, saveRoot, ensureRead, fileAt } from './src/fsroots.js';
+import { VERSION, RELEASE_DATE } from './src/version.js';
 import { parse3MFParts } from './src/threemf.js';
 import { computePeaks, formatTime } from './src/audioview.js';
 
@@ -30,7 +36,11 @@ const drop = $('drop'), mdWrap = $('mdWrap'), mdEl = $('md'), mdEdit = $('mdEdit
       imageEl = $('image'), imgEl = $('imgEl'), imgInfo = $('imgInfo'),
       audioViewEl = $('audio'), audioEl = $('audioEl'), audioWave = $('audioWave'),
       audioFFT = $('audioFFT'), audioPlayBtn = $('audioPlay'), audioTimeEl = $('audioTime'),
-      audioBackBtn = $('audioBack'), audioFwdBtn = $('audioFwd');
+      audioBackBtn = $('audioBack'), audioFwdBtn = $('audioFwd'),
+      htmlViewEl = $('html'), htmlFrame = $('htmlFrame'), htmlOpenBtn = $('htmlOpenBtn'),
+      htmlInfo = $('htmlInfo');
+
+$('appVersion').textContent = `v${VERSION} · ${RELEASE_DATE}`;
 
 // The folder of the file currently shown, for "Open folder".
 let activeFolder = '';
@@ -48,6 +58,7 @@ function show(view) {
   document.querySelector('main').style.display = isDrop ? 'none' : 'block';
   mdWrap.style.display  = view === 'md'    ? 'flex' : 'none';
   yamlEl.style.display  = view === 'yaml'  ? 'flex' : 'none';
+  htmlViewEl.style.display = view === 'html' ? 'flex' : 'none';
   csvEl.style.display   = view === 'csv'   ? 'flex' : 'none';
   imageEl.style.display = view === 'image' ? 'flex' : 'none';
   audioViewEl.style.display = view === 'audio' ? 'flex' : 'none';
@@ -134,6 +145,7 @@ function renderMarkdown(text, dir) {
   marked.setOptions({ gfm: true, breaks: false });
   const html = DOMPurify.sanitize(marked.parse(text));
   mdEl.innerHTML = html;
+  addHeadingIds(mdEl);
   applyTextDirection(mdEl, dir);
 }
 
@@ -155,6 +167,12 @@ function renderMdTab(tab) {
     mdEditToggle.textContent = 'Edit';
   }
   show('md');
+  // Opened through a link like other.md#setup: jump to that heading once.
+  if (tab.pendingHash && !tab.editing) {
+    const id = tab.pendingHash;
+    tab.pendingHash = '';
+    requestAnimationFrame(() => scrollToAnchor(id, false));
+  }
 }
 
 mdDirSel.addEventListener('change', () => {
@@ -236,6 +254,216 @@ function newMdFile() {
   });
 }
 newMdBtn.addEventListener('click', newMdFile);
+
+// ---- HTML: sandboxed preview (scripts run in an opaque origin) ----
+function renderHtmlTab(tab) {
+  const base = tab.link?.baseURL || '';
+  htmlFrame.srcdoc = withBaseHref(tab.payload.text, base);
+  htmlOpenBtn.hidden = !base;
+  htmlInfo.textContent = base ? ''
+    : 'Sandboxed preview — images and styles the page loads from its own folder are not shown.';
+  show('html');
+}
+htmlOpenBtn.addEventListener('click', () => {
+  const url = store.active?.link?.baseURL;
+  if (url) window.open(url, '_blank', 'noopener');
+});
+
+// ---- Links inside rendered Markdown ----
+// A plain <a href="other.md"> would navigate the whole app to
+// <app-origin>/other.md (a 404 on GitHub Pages). Instead every click is routed:
+//   #heading            → scroll inside the document
+//   http(s) / mailto    → a new browser tab
+//   other.md, ../a.md   → a new localViewer tab, read from the same folder
+//   C:\x\a.md, file://  → the same, when it lies inside a granted folder
+function onDocLinkClick(e) {
+  if (e.type === 'auxclick' && e.button !== 1) return;
+  const a = e.target.closest?.('a[href]');
+  const tab = store.active;
+  if (!a || !tab) return;
+  e.preventDefault();
+  followLink(tab, classifyLink(a.getAttribute('href')));
+}
+mdEl.addEventListener('click', onDocLinkClick);
+mdEl.addEventListener('auxclick', onDocLinkClick);
+
+function followLink(tab, link) {
+  if (link.type === 'anchor') return scrollToAnchor(link.id, true);
+  if (link.type === 'external') return window.open(link.url, '_blank', 'noopener,noreferrer');
+  if (link.type !== 'relative' && link.type !== 'absolute') return;
+  const opening = tab.link?.baseURL ? openLinkViaURL(tab, link) : openLinkViaFolder(tab, link);
+  return Promise.resolve(opening).catch((e) => {
+    console.error(e);
+    showToast(`Couldn't open the link "${link.path}".\nReason: ${e.message || e.name || 'unknown'}.\n`
+      + 'Check that the file exists, then try again.', 9000);
+  });
+}
+
+function scrollToAnchor(id, reportMissing) {
+  const el = findAnchorTarget(mdEl, id);
+  if (el) el.scrollIntoView({ block: 'start' });
+  else if (reportMissing) showToast(`No heading or anchor "#${id}" in this document.`);
+}
+
+// A link target that is already open: just switch to it (keeps unsaved edits).
+function activateIfOpen(source, hash) {
+  const open = store.tabs.find(t => t.source === source);
+  if (!open) return false;
+  if (store.activeId === open.id) { if (hash) scrollToAnchor(hash, true); return true; }
+  if (hash) open.pendingHash = hash;
+  store.activate(open.id);
+  return true;
+}
+
+const SUPPORTED_HINT = 'localViewer shows .md, .html, .yaml, .csv, .stl, .3mf, .step, .scad, .gltf/.glb, images and audio.';
+
+// --- documents that came from a URL (local helper, ?src=, remote) ---
+function openLinkViaURL(tab, link) {
+  const { baseURL, diskPath } = tab.link;
+  let rel = link.path + (link.query || '');
+  if (link.type === 'absolute') {
+    const inside = diskPath ? relativeToDir(link.path, dirname(diskPath)) : null;
+    if (inside == null) {
+      return showToast(`Can't open ${link.path}\nIt is outside the folder of ${tab.name}, `
+        + 'the only folder shared with this window. Use a relative link, or open that file directly.', 9000);
+    }
+    rel = inside;
+  }
+  const url = new URL(rel, baseURL);
+  // The Windows helper only shares the opened file's folder, under /file/.
+  if (new URL(baseURL).pathname.startsWith('/file/') && !url.pathname.startsWith('/file/')) {
+    return showToast(`Can't open ${link.path}\nIt is above the folder of ${tab.name}, `
+      + 'the only folder the local helper shares. Open that file directly instead.', 9000);
+  }
+  let name;
+  try { name = basename(decodeURIComponent(url.pathname)); } catch { name = basename(url.pathname); }
+  if (!detectKind(name)) return window.open(url.href, '_blank', 'noopener');
+  const linkedDisk = diskPath ? joinDiskPath(dirname(diskPath), rel.split('?')[0]) : undefined;
+  if (activateIfOpen(linkedDisk || url.href, link.hash)) return;
+  return openFetchedLink(url.href, name, linkedDisk, link.hash);
+}
+
+async function openFetchedLink(url, name, diskPath, hash) {
+  const onLoopback = ['127.0.0.1', 'localhost'].includes(new URL(url).hostname);
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (e) {
+    return showToast(onLoopback
+      ? `Couldn't open ${name}: the local helper isn't answering (it stops after 15 idle minutes).\n`
+        + 'Open the file again from Explorer (Open with → localViewer).'
+      : `Couldn't open ${name}: the request failed (${e.message || e}).\n`
+        + 'The site may be offline or may not let other sites read it.', 9000);
+  }
+  if (!res.ok) {
+    return showToast(`Couldn't open ${name}: ${res.status === 404 ? 'file not found' : 'HTTP ' + res.status}.\n`
+      + `${diskPath || url}\nCheck the link path and the file name's spelling.`, 9000);
+  }
+  const blob = await res.blob();
+  return loadFromBlob(name, blob, diskPath || url, undefined, { link: { baseURL: url, diskPath }, hash });
+}
+
+// --- documents opened from disk (installed app, drop, Open file) ---
+// The browser only hands us the one file, so reading its neighbours needs a
+// folder grant. It is asked once per folder and remembered.
+async function openLinkViaFolder(tab, link) {
+  if (!window.showDirectoryPicker) {
+    return showToast('Following links to other local files needs Edge or Chrome on a desktop '
+      + '(File System Access API). Open the linked file directly instead.', 9000);
+  }
+  let ctx = tab.link?.root ? tab.link : null;
+  if (!ctx && tab.fileHandle) ctx = await findRootFor(tab.fileHandle);
+  let segs = ctx && targetSegments(ctx, link);
+  if (!segs) {
+    ctx = await askForFolder(tab, link, ctx);
+    if (!ctx) return;
+    segs = targetSegments(ctx, link);
+    if (!segs) {
+      return showToast(`"${ctx.root.name}" doesn't contain ${link.path}.\n`
+        + 'Click the link again and choose a folder that contains both files.', 9000);
+    }
+  }
+  if (!(await ensureRead(ctx.root))) {
+    return showToast(`Read access to "${ctx.root.name}" wasn't granted, so the link can't be followed.\n`
+      + 'Click the link again and choose Allow.', 9000);
+  }
+  if (ctx.dir && !tab.link?.root) rememberFolder(tab, ctx);
+
+  const source = `${ctx.root.name}/${segs.join('/')}`;
+  if (activateIfOpen(source, link.hash)) return;
+  let fh;
+  try {
+    fh = await fileAt(ctx.root, segs);
+  } catch (e) {
+    if (e.name === 'NotFoundError') {
+      return showToast(`Link target not found: ${source}\nCheck the link path and the file name's spelling.`, 9000);
+    }
+    if (e.name === 'TypeMismatchError') {
+      return showToast(`${source} is a folder, not a file — localViewer opens files only.`, 9000);
+    }
+    throw e;
+  }
+  const file = await fh.getFile();
+  if (!detectKind(file.name)) {
+    return showToast(`${file.name} can't be shown here (unsupported file type).\n${SUPPORTED_HINT}`, 9000);
+  }
+  return loadFromBlob(file.name, file, source, fh,
+    { link: { root: ctx.root, dir: segs.slice(0, -1) }, hash: link.hash });
+}
+
+function targetSegments(ctx, link) {
+  if (link.type === 'absolute') return segmentsAfterRoot(link.path, ctx.root.name);
+  return ctx.dir ? resolveSegments(ctx.dir, link.path) : null;
+}
+
+// The current tab now knows its folder: show the folder-relative path and use
+// it as the tab identity, so a link back to this file re-uses this tab.
+function rememberFolder(tab, ctx) {
+  const source = `${ctx.root.name}/${[...ctx.dir, tab.name].join('/')}`;
+  const meta = fileMeta(tab.name, source);
+  store.update(tab.id, { link: { root: ctx.root, dir: ctx.dir }, source, meta });
+  if (store.active === tab) setActiveFileMeta(meta);
+}
+
+async function askForFolder(tab, link, prev) {
+  showToast(link.type === 'absolute'
+    ? `To open ${link.path}, choose a folder that contains it (asked once per folder).`
+    : prev?.dir
+      ? `This link goes ${levelsAboveRoot(prev.dir, link.path)} folder(s) above "${prev.root.name}".\n`
+        + 'Choose a higher folder that contains both files.'
+      : `To follow links in ${tab.name}, choose the folder that contains it (asked once per folder).`, 9000);
+  const opts = { id: 'lv-links', mode: 'read' };
+  if (tab.fileHandle || prev?.root) opts.startIn = tab.fileHandle || prev.root;
+  let root;
+  try {
+    root = await window.showDirectoryPicker(opts);
+  } catch (e) {
+    showToast(e.name === 'AbortError'
+      ? 'Link not opened — no folder was chosen.'
+      : `Couldn't open the folder picker: ${e.message || e.name}.`);
+    return null;
+  }
+  // Where does the current document sit inside the chosen folder?
+  let dir = null;
+  if (tab.fileHandle) {
+    const segs = await root.resolve(tab.fileHandle).catch(() => null);
+    if (segs) dir = segs.slice(0, -1);
+  } else if (prev?.root) {
+    const segs = await root.resolve(prev.root).catch(() => null);
+    if (segs) dir = [...segs, ...prev.dir];
+  } else {
+    // Opened without a file handle: accept a folder that holds the file directly.
+    const here = await root.getFileHandle(tab.name).catch(() => null);
+    if (here) { dir = []; tab.fileHandle = here; }
+  }
+  if (!dir && link.type !== 'absolute') {
+    showToast(`"${root.name}" doesn't contain ${tab.name}.\n`
+      + 'Click the link again and choose the folder that holds this file (or one above it).', 9000);
+    return null;
+  }
+  await saveRoot(root);
+  return { root, dir };
+}
 
 // ---- Images (SVG + raster) ----
 // A lightweight pan/zoom viewer: the <img> is transformed with scale+translate;
@@ -727,6 +955,7 @@ function renderActive() {
     return;
   }
   if (tab.kind === 'md') renderMdTab(tab);
+  else if (tab.kind === 'html') renderHtmlTab(tab);
   else if (tab.kind === 'yaml') renderYamlDoc(tab.payload.text);
   else if (tab.kind === 'csv') renderCsvDoc(tab.payload.text);
   else if (tab.kind === 'image') renderImage(tab.payload.url);
@@ -772,22 +1001,28 @@ store.subscribe(() => {
 // ---- entrypoint ----
 // `source` is the most informative locator we have (full URL, ?path=, or just
 // the file name) and drives the header path display + "Open folder".
-async function loadFromBlob(name, blob, source, handle) {
+// `handle` is the file's FileSystemFileHandle when the browser gave us one;
+// `link` is where the file came from (URL, or granted folder + path) so links
+// inside it can be followed; `hash` is a heading to scroll to once shown.
+async function loadFromBlob(name, blob, source, handle, { link = null, hash = '' } = {}) {
   const meta = fileMeta(name, source);
   if (!meta.kind) {
     kindBadge.textContent = 'unknown';
-    return showError(`Unsupported file: ${name}\nSupported: .md, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .gltf, .glb, .svg, images, audio`);
+    return showError(`Unsupported file: ${name}\nSupported: .md, .html, .yaml, .csv, .stl, .3mf, .step, .stp, .scad, .gltf, .glb, .svg, images, audio`);
   }
   // Prior tab for the same source: free its object URL before replacing it.
   const prior = store.tabs.find(t => t.source === meta.source);
   if (prior) revokeTabURL(prior.id);
   // Show the tab (with a spinner) right away; the payload is read afterwards so
   // the other tabs stay usable while this file is being processed.
-  const tab = store.open({ name, source: meta.source, kind: meta.kind, meta, payload: null, loading: true, dirty: false });
+  const tab = store.open({
+    name, source: meta.source, kind: meta.kind, meta, payload: null, loading: true, dirty: false,
+    fileHandle: handle || null, link, pendingHash: hash
+  });
   await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));
   try {
     let payload;
-    if (['md', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
+    if (['md', 'html', 'yaml', 'csv', 'scad'].includes(meta.kind)) payload = { text: await blob.text() };
     else if (meta.kind === 'image') payload = { url: URL.createObjectURL(blob) };
     else if (meta.kind === 'audio') payload = { url: URL.createObjectURL(blob), buffer: await blob.arrayBuffer() };
     else payload = { buffer: await blob.arrayBuffer() };
@@ -816,7 +1051,10 @@ async function loadFromURL(url, sourceOverride) {
   const res = await fetch(url);
   if (!res.ok) return showError(`Fetch failed: HTTP ${res.status}\n${url}`);
   const blob = await res.blob();
-  return loadFromBlob(name, blob, sourceOverride || url);
+  // Absolute URL as the identity, so a link back to this file re-uses its tab.
+  const absURL = new URL(url, location.href).href;
+  const link = { baseURL: absURL, diskPath: sourceOverride };
+  return loadFromBlob(name, blob, sourceOverride || absURL, undefined, { link });
 }
 
 function loadFiles(files) {
@@ -833,9 +1071,44 @@ picker.addEventListener('change', (e) => {
   window.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('over'); }));
 ['dragleave','drop'].forEach(ev =>
   window.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+// Chromium also hands out a file handle per dropped file; keeping it lets
+// links inside the file be followed and Save write back to the original.
 window.addEventListener('drop', (e) => {
-  if (e.dataTransfer?.files?.length) loadFiles(e.dataTransfer.files);
+  const dt = e.dataTransfer;
+  if (!dt?.files?.length) return;
+  const files = [...dt.files];
+  const items = [...dt.items].filter(i => i.kind === 'file');
+  if (items.length !== files.length || typeof items[0]?.getAsFileSystemHandle !== 'function') {
+    return loadFiles(files);
+  }
+  // getAsFileSystemHandle must be called synchronously, inside the event.
+  const pending = items.map(i => i.getAsFileSystemHandle().catch(() => null));
+  Promise.all(pending).then((handles) => files.forEach((f, i) =>
+    loadFromBlob(f.name, f, undefined, handles[i]?.kind === 'file' ? handles[i] : undefined)));
 });
+
+// "Open file": prefer the File System Access picker, which returns handles.
+const pickerLabel = document.querySelector('label[for="picker"]');
+if (window.showOpenFilePicker && pickerLabel) {
+  pickerLabel.addEventListener('click', async (e) => {
+    e.preventDefault();
+    let handles;
+    try {
+      handles = await window.showOpenFilePicker({ multiple: true, id: 'lv-open' });
+    } catch (err) {
+      if (err.name !== 'AbortError') showToast(`Couldn't open the file picker: ${err.message || err.name}.`);
+      return;
+    }
+    for (const h of handles) {
+      try {
+        const f = await h.getFile();
+        loadFromBlob(f.name, f, undefined, h);
+      } catch (err) {
+        showToast(`Couldn't read ${h.name}: ${err.message || err.name}.`);
+      }
+    }
+  });
+}
 
 // ---- File Handling API: launched from the OS (installed PWA) ----
 // When localViewer is installed, Edge/Chrome register it as a handler for

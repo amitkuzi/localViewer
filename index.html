@@ -127,6 +127,8 @@
     background:#0F0C0A;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     font-size:.9rem;line-height:1.6}
   #yaml{display:none;flex-direction:column;height:100%;overflow:hidden}
+  #html{display:none;flex-direction:column;height:100%;overflow:hidden}
+  #htmlFrame{flex:1;width:100%;border:none;background:#fff}
   .y-toolbar{display:flex;gap:.5rem;padding:.5rem .9rem;border-bottom:1px solid var(--line);
     background:var(--panel)}
   .y-toolbar button{font:inherit;color:var(--text);background:#0F0C0A;border:1px solid var(--line);
@@ -301,7 +303,7 @@
   <button id="newMdBtn" type="button">New MD</button>
   <button id="aboutBtn" type="button">About</button>
   <label for="picker">Open file</label>
-  <input id="picker" type="file" accept=".md,.markdown,.txt,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.gltf,.glb,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac,.weba,.opus" multiple>
+  <input id="picker" type="file" accept=".md,.markdown,.txt,.html,.htm,.yaml,.yml,.csv,.stl,.3mf,.step,.stp,.scad,.gltf,.glb,.svg,.png,.jpg,.jpeg,.gif,.webp,.bmp,.ico,.avif,.mp3,.wav,.ogg,.oga,.m4a,.flac,.aac,.weba,.opus" multiple>
   <button id="installBtn" type="button" hidden>Install app</button>
 </header>
 
@@ -339,6 +341,17 @@
       <span id="csvInfo" class="info"></span>
     </div>
     <div id="csvTable" class="csv-scroll"></div>
+  </section>
+  <section id="html">
+    <div class="y-toolbar">
+      <button id="htmlOpenBtn" type="button" title="Open this page in a normal browser tab">Open in browser</button>
+      <span class="spacer"></span>
+      <span id="htmlInfo" class="info"></span>
+    </div>
+    <!-- No allow-same-origin: the page runs in an opaque origin, so a local
+         HTML file can't reach localViewer's storage or granted folders. -->
+    <iframe id="htmlFrame" title="HTML preview"
+      sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals"></iframe>
   </section>
   <div id="image">
     <img id="imgEl" alt="">
@@ -541,7 +554,7 @@
       <code>.3mf</code> and friends. After the first load it works fully offline.
     </p>
 
-    <p class="ver">localViewer · v1.6.0 · CC BY 4.0</p>
+    <p class="ver">localViewer · <span id="appVersion">v1.7.0 · 2026-11-25</span> · CC BY 4.0</p>
   </div>
 </dialog>
 
